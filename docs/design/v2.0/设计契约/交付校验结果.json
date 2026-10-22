@@ -1,0 +1,121 @@
+{
+  "design_version": "2.0",
+  "checked_at": "2026-10-22T12:03:15.667062+00:00",
+  "scope": "design-only static and cross-reference validation; product AC not run",
+  "inventory": {
+    "documents": 12,
+    "requirements": 17,
+    "acceptance_cases": 40,
+    "implementation_tasks_M0_M6": 48,
+    "commands": 65,
+    "ui_operation_groups": 38
+  },
+  "html_files": 13,
+  "scripts_syntax_checked": 11,
+  "independent_page_entries": 9,
+  "checks": [
+    "UTF8/JSON/XML/SVG parse",
+    "relative links",
+    "command names and response type references",
+    "UI→command/FR/T/AC references",
+    "independent entry consistency",
+    "all standalone scripts syntax",
+    "no remote runtime dependencies",
+    "no product implementation files",
+    "selected text color pairs contrast"
+  ],
+  "contrast": [
+    {
+      "theme": "light",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 15.71,
+      "threshold": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "text_secondary",
+      "background": "canvas",
+      "ratio": 5.22,
+      "threshold": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "accent",
+      "background": "accent_soft",
+      "ratio": 5.15,
+      "threshold": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "warning_text",
+      "background": "warning_surface",
+      "ratio": 6.05,
+      "threshold": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "danger_text",
+      "background": "danger_surface",
+      "ratio": 5.27,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 14.06,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "text_secondary",
+      "background": "canvas",
+      "ratio": 7.97,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "accent",
+      "background": "accent_soft",
+      "ratio": 6.33,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "warning_text",
+      "background": "warning_surface",
+      "ratio": 7.65,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "danger_text",
+      "background": "danger_surface",
+      "ratio": 7.85,
+      "threshold": 4.5
+    },
+    {
+      "theme": "light",
+      "foreground": "white button text",
+      "background": "accent",
+      "ratio": 5.84,
+      "threshold": 4.5
+    },
+    {
+      "theme": "dark",
+      "foreground": "dark button text",
+      "background": "accent",
+      "ratio": 8.19,
+      "threshold": 4.5
+    }
+  ],
+  "result": "passed",
+  "not_verified": [
+    "Windows11 native runtime",
+    "OAuth/DPAPI/process/real download",
+    "all UI state combinations",
+    "Windows accessibility/DPI",
+    "direct file protocol on Windows"
+  ]
+}

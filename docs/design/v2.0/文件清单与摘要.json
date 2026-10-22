@@ -1,0 +1,338 @@
+{
+  "design_version": "2.0",
+  "date": "2026-10-22",
+  "scope": "design-documents-and-static-prototypes-only",
+  "note": "不含清单自身摘要；原始公开响应摘要与交付裁剪文件摘要分别记录。",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 5175,
+      "sha256": "8e7df1cc0b9a7a73650336a4159909b8a98aee3c764c903903933c89694fc1a2"
+    },
+    {
+      "path": "README.md",
+      "bytes": 7243,
+      "sha256": "dd454aa524934f4e7eb774ff461bf00ffa3a52a61e7a0be09f8203a8008bd6e2"
+    },
+    {
+      "path": "图示/下载安装流水线.svg",
+      "bytes": 10350,
+      "sha256": "f971b9dfbace160aea4f7478b1b6705538c0ef9311112e7cca11c6ff2997976e"
+    },
+    {
+      "path": "图示/实例生命周期.svg",
+      "bytes": 9124,
+      "sha256": "ce3e2d3aad997b7aaa097ce9c2dd78ec876dc681110f9bc43a1ccfe75d6678ca"
+    },
+    {
+      "path": "图示/系统模块.svg",
+      "bytes": 8320,
+      "sha256": "ae6463fb2211654567c47964fe6785d06c2b7443a590da45e2e1cdc7916b4fc0"
+    },
+    {
+      "path": "图示/说明.md",
+      "bytes": 160,
+      "sha256": "e411aa0e4a227eb4497176111b6353fe74a2a480092bc662aa46a626a41efbde"
+    },
+    {
+      "path": "图示/账号与授权.svg",
+      "bytes": 8149,
+      "sha256": "e1f3e34ac61f19ecf260d1637b98aa054c97d0cd5a5a237106ddff9268fe9347"
+    },
+    {
+      "path": "审查与修订记录.md",
+      "bytes": 4828,
+      "sha256": "16a0dd8a0918e1ce15e8c88ee5fd1ce9cbef052da53e030239db2974c21e8f76"
+    },
+    {
+      "path": "文档/01-产品需求PRD.md",
+      "bytes": 12225,
+      "sha256": "765c2d3f6849c74afdad29dd2f925ee2ed1c455d762bb216b2c302edbe27b16e"
+    },
+    {
+      "path": "文档/02-系统与模块架构.md",
+      "bytes": 12577,
+      "sha256": "62202afd225b52b2c0fb58a6e63806d1449c7007c4bc6f0ef08ba62f0fef74b0"
+    },
+    {
+      "path": "文档/03-数据模型与持久化契约.md",
+      "bytes": 11228,
+      "sha256": "9d91c7b567f324be9de4efc0fa83429745244bfec3474177c8803f88506c8a97"
+    },
+    {
+      "path": "文档/04-任务队列与下载安装设计.md",
+      "bytes": 12641,
+      "sha256": "5140b251dffcf3efed64f15de0162cfd005360c794076413cc9718878ec57ca5"
+    },
+    {
+      "path": "文档/05-状态机与异常路径.md",
+      "bytes": 10214,
+      "sha256": "2d307b2ed9c2dc84dc4302b08e9dc7167264c69340814fc94ebc52d22ce56d82"
+    },
+    {
+      "path": "文档/06-安全隐私与迁移.md",
+      "bytes": 8403,
+      "sha256": "73d889a7661b43f47a4baa9729c2ab4495976e6dea82a935b9fd552d4ec65ac1"
+    },
+    {
+      "path": "文档/07-公开研究与来源核实.md",
+      "bytes": 11704,
+      "sha256": "449a040aca97f68ce5b97db038206f4e03b1774c680e2a9b40a81beb273f2bd1"
+    },
+    {
+      "path": "文档/08-验收矩阵与阶段门禁.md",
+      "bytes": 10451,
+      "sha256": "176a8353529a3a92640cef70126fb93041993de51a1126dee887abd7d8f159a2"
+    },
+    {
+      "path": "文档/09-视觉与交互规范.md",
+      "bytes": 8701,
+      "sha256": "c97799487e9e66311ef23b70a3732707910a2f9ee471200842e80d8d7177d51a"
+    },
+    {
+      "path": "文档/10-实施任务清单.md",
+      "bytes": 10292,
+      "sha256": "3d0be0971a4027e2c600ebf392641e3afb77c6b2ec3b51f01f4d337717a7e0c4"
+    },
+    {
+      "path": "文档/11-实施契约与一致性决策.md",
+      "bytes": 38304,
+      "sha256": "cbe8f27f8e306d36f24e3ea78e869b425cc15e7ab8cb467e244e250bac0679ae"
+    },
+    {
+      "path": "文档/12-页面操作与实现追踪.md",
+      "bytes": 11238,
+      "sha256": "8d32bf4e9e78a6cfd2a8b26c2170e0a7962e4267ad341e0420489d8e54787427"
+    },
+    {
+      "path": "更名与仓库约定.md",
+      "bytes": 1187,
+      "sha256": "1e013e3bf3a9ef6f706d2a6323f326bbb1ce3dd8f65fd7580dc538b29ea20ce0"
+    },
+    {
+      "path": "研究证据/adoptium-java25.json",
+      "bytes": 2777,
+      "sha256": "2adadf07d76b8bc3266c22e2e653a560a821236fb4bca40821d61aa95b993f98"
+    },
+    {
+      "path": "研究证据/fabric-api.json",
+      "bytes": 598926,
+      "sha256": "fbc1f353e69877b137b73c7416208259f07cead571af48f1c2a6c8902eeec5c8"
+    },
+    {
+      "path": "研究证据/forge-promotions.json",
+      "bytes": 4153,
+      "sha256": "c521d3f503ee7453aba86d9d6fefccf9ccab7543e14d91e83eb3d1aa9ae4d1e0"
+    },
+    {
+      "path": "研究证据/modrinth-search.json",
+      "bytes": 1132,
+      "sha256": "4061c1f9d94cfd28beff9d97a59cd03cb92ce981ccf70b72305e742e31a7c10d"
+    },
+    {
+      "path": "研究证据/modrinth-versions.json",
+      "bytes": 19078,
+      "sha256": "0005fea2bb5917614d7a38e1119225a2e76eb68fbfb35d506c97f8c7ee4f43dc"
+    },
+    {
+      "path": "研究证据/mojang-manifest.json",
+      "bytes": 278138,
+      "sha256": "1e9f0052c6f385576f0effac072f2b32278346ce647d681e396dcf7b6f7d738a"
+    },
+    {
+      "path": "研究证据/neoforge-maven.xml",
+      "bytes": 68481,
+      "sha256": "899eea4d46d5dc41c5b21a993cb32f73bdfbf68d28ee055c958297453ed10140"
+    },
+    {
+      "path": "研究证据/pcl-download-pages.json",
+      "bytes": 7426,
+      "sha256": "b16ad5ab27b4d5f187c02921215ec5f4b125a7880472f3a4aba5b0f66f45abdf"
+    },
+    {
+      "path": "研究证据/pcl-instance-pages.json",
+      "bytes": 15429,
+      "sha256": "8905a29b90e9c99c557118674ceed00c0b8733224f329d74b7366bc6a9c4a3da"
+    },
+    {
+      "path": "研究证据/pcl-latest.json",
+      "bytes": 197,
+      "sha256": "ba8602253f9183f32aa3812a5aac2255e1a74b98470d9dd9a9f0a4a312086ff6"
+    },
+    {
+      "path": "研究证据/pcl-launch-pages.json",
+      "bytes": 23333,
+      "sha256": "128934c15a5ce345d1f3f81100785dcf4b3a58e1fe69490a3a68f9ed471c68cf"
+    },
+    {
+      "path": "研究证据/pcl-license-summary.json",
+      "bytes": 296,
+      "sha256": "acb44f9270152196aca8a84c1a52001c3f81e42c965c46e6545d15a65a12069e"
+    },
+    {
+      "path": "研究证据/pcl-pages.json",
+      "bytes": 12942,
+      "sha256": "69f299fc4fa00d4da1ffd42f2d82a113377f3bd1ca259f82b11c4956f762f77a"
+    },
+    {
+      "path": "研究证据/pcl-releases.json",
+      "bytes": 1278,
+      "sha256": "721ca6059e48f982e2d47e52c806a65e0b01a839f74e3a1625192d845d9b10ec"
+    },
+    {
+      "path": "研究证据/pcl-setup-pages.json",
+      "bytes": 12587,
+      "sha256": "0748f04bb885fbf9896a07259090434810f68bea4407b39196cd54e5a09a1ccf"
+    },
+    {
+      "path": "研究证据/quilt-api.json",
+      "bytes": 892353,
+      "sha256": "de882ad66ba5d401bbe3c5453be7a00ab422faee6bf5c54d7a86feefe1f6a5d4"
+    },
+    {
+      "path": "研究证据/version-1.21.1.json",
+      "bytes": 38408,
+      "sha256": "597f17a6cdad8761982d8c307d3aae2c224c821de02046cf10bc29870e2c7dfe"
+    },
+    {
+      "path": "研究证据/version-26.1.json",
+      "bytes": 42489,
+      "sha256": "ccb15b2354a37e21c4f2781dc46f215ce7963c01ca7b68e6eb4d43ff679eeb29"
+    },
+    {
+      "path": "研究证据/version-26.4-snapshot-5.json",
+      "bytes": 45004,
+      "sha256": "0f80b4bf6168e26b2477d53984f683130ab478536f4d68574bb878626664f999"
+    },
+    {
+      "path": "研究证据/核实记录.json",
+      "bytes": 9492,
+      "sha256": "befe7b368680dfe69a43984e8b3d100760e75fe2b6311c582464e894c3b38737"
+    },
+    {
+      "path": "研究证据/说明.md",
+      "bytes": 1116,
+      "sha256": "570a4cadd8841c078f41ef9905d6eeb2bb8b7abe1921dcacee0626f3f0d6316f"
+    },
+    {
+      "path": "视觉原型/01-首页.html",
+      "bytes": 103337,
+      "sha256": "ed617b0ef6aa372ac94551ca2586cf82fa1e5bad2086bb4214205605e57a39b2"
+    },
+    {
+      "path": "视觉原型/02-实例库.html",
+      "bytes": 103342,
+      "sha256": "5645baf9d229a7bfe0f262f3ba4f40aded4250ecb3078b29df2db6aafac1f20a"
+    },
+    {
+      "path": "视觉原型/03-游戏下载与安装.html",
+      "bytes": 103340,
+      "sha256": "5db49a435dd05a92a6e8a5c88cb5f2b97453102d78a06d2cc564fd9e3c4938c2"
+    },
+    {
+      "path": "视觉原型/04-实例详情.html",
+      "bytes": 103341,
+      "sha256": "4037c2feccba0b5acbf9a8ffa7020fecd8c8d6a0673e7025df63088acb2a68be"
+    },
+    {
+      "path": "视觉原型/05-Mod管理.html",
+      "bytes": 103337,
+      "sha256": "0a04f5a2d8636897dfd830ab424ce3a0575c617619acf08b02ad90c0f53ac9a4"
+    },
+    {
+      "path": "视觉原型/06-下载任务.html",
+      "bytes": 103338,
+      "sha256": "54ae57e8937717c5420655ade18a6c72e83566d08f87b26d46916a2ee2f2439b"
+    },
+    {
+      "path": "视觉原型/07-账号.html",
+      "bytes": 103341,
+      "sha256": "83d23a54b1e5f3dc3d0234f542c496bab02746b20058c46a2c56b16a40bcffd9"
+    },
+    {
+      "path": "视觉原型/08-设置.html",
+      "bytes": 103341,
+      "sha256": "eff455606789b66fc36a56e6069eb824f4329e71bfae5324d8c769abfa8ae4f9"
+    },
+    {
+      "path": "视觉原型/09-日志诊断.html",
+      "bytes": 103337,
+      "sha256": "41c2991d7ba7105151b1f97c3facdb7ba044d2c6aa7413505c024d830bfc59e5"
+    },
+    {
+      "path": "视觉原型/desktop-board.html",
+      "bytes": 139769,
+      "sha256": "abc09e53895a3898e860693067232773e1801db78f8d90af14321d4118b74e0c"
+    },
+    {
+      "path": "视觉原型/index.html",
+      "bytes": 103319,
+      "sha256": "3c691f5dde670dcb25b4ed0084b029e3267a911bc12c5dec421a6533f373cf85"
+    },
+    {
+      "path": "视觉原型/visual-spec.html",
+      "bytes": 13174,
+      "sha256": "a261dcf84e87cc497f373e2fc56ed5842db3d1b11e8aa2ef103128f1b5374eca"
+    },
+    {
+      "path": "设计契约/交付校验结果.json",
+      "bytes": 2819,
+      "sha256": "f8702388c5e4d4490142ef132aeb208df7b5b44416f1b0cb50de2447cb91a9c5"
+    },
+    {
+      "path": "设计契约/命令目录.json",
+      "bytes": 19011,
+      "sha256": "24f5e330a1266efdf2f3cafb26b7868fff963fb7beeddec14b2ea25b404472ac"
+    },
+    {
+      "path": "设计契约/视觉令牌.json",
+      "bytes": 2096,
+      "sha256": "c8d346dc44f246db82b7586c415c0ffa8ab522943b087819601947fbd11654bc"
+    },
+    {
+      "path": "设计契约/页面操作追踪.json",
+      "bytes": 19427,
+      "sha256": "2ebc8e91062902ad4e96a4941ca2fe8ce3493b6378397a8e38cb98be5e2586a1"
+    },
+    {
+      "path": "设计总册.html",
+      "bytes": 221459,
+      "sha256": "09bd572e9eb82a4b18a2d00360d3bde1a034b4b78c6cfa7da3d5827fc988e988"
+    },
+    {
+      "path": "设计核验记录.md",
+      "bytes": 4202,
+      "sha256": "d2977a0a6ade019aecd91c635ad3313add4912bfae432c3ca6941000c1898684"
+    },
+    {
+      "path": "页面预览/K-Launcher-Mod管理-1440.png",
+      "bytes": 58217,
+      "sha256": "254ca566659e530e9b5a2f21672cfc985672dc3a160923f011a149822d8afcdd"
+    },
+    {
+      "path": "页面预览/K-Launcher-下载任务-深色1440.png",
+      "bytes": 59730,
+      "sha256": "a3290a1fb24aea4b06ac25c3abd180d54a4184f3eeee8375f7ce38160d446aef"
+    },
+    {
+      "path": "页面预览/K-Launcher-安装-1440.png",
+      "bytes": 65737,
+      "sha256": "103432301eed2f801d934f2ce00dedee73547d0b15aef3b167951e9d79dd51cd"
+    },
+    {
+      "path": "页面预览/K-Launcher-实例详情-1360.png",
+      "bytes": 60282,
+      "sha256": "a47c75b3743042710e8be945e4b349a08951f86c86f07102e410d98bbad1ab6b"
+    },
+    {
+      "path": "页面预览/K-Launcher-设置-1100.png",
+      "bytes": 57354,
+      "sha256": "ddba071aa2356c4916ad2169abddda0f3830ae2b15670be32c2604fc62819132"
+    },
+    {
+      "path": "页面预览/K-Launcher-首页.png",
+      "bytes": 59016,
+      "sha256": "fbc614464fca77b5d748bbe10af5897e5275e1462b0b04d517420d1540710e6d"
+    }
+  ]
+}

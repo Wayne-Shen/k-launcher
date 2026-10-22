@@ -1,0 +1,22 @@
+# Local development and build artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+node_modules/
+target/
+dist/
+coverage/
+.vite/
+*.log
+# Local secrets and private runtime data
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.pfx
+*.p12
+# Future local-only implementation/test data
+.local/
+implementation/private/

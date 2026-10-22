@@ -1,0 +1,93 @@
+{
+  "design_version": "2.0",
+  "name": "KLauncher / Quiet Desktop",
+  "unit": "CSS px at 100% = DIP",
+  "themes": {
+    "light": {
+      "canvas": "#F6F7F9",
+      "surface": "#FFFFFF",
+      "sidebar": "#F0F2F5",
+      "text": "#20232B",
+      "text_secondary": "#626875",
+      "border": "#E2E5EB",
+      "accent": "#4C55D8",
+      "accent_soft": "#EEF0FF",
+      "focus": "#4C55D8",
+      "warning_text": "#835316",
+      "warning_surface": "#FFF5E4",
+      "danger_text": "#B33A44",
+      "danger_surface": "#FFF0F2",
+      "control_border": "#8C93A4",
+      "navigation_selected": "#E6E9FF"
+    },
+    "dark": {
+      "canvas": "#15171C",
+      "surface": "#1D2027",
+      "sidebar": "#191B22",
+      "text": "#ECEEF5",
+      "text_secondary": "#A6ADBD",
+      "border": "#353B49",
+      "accent": "#A9B0FF",
+      "accent_soft": "#2B304D",
+      "focus": "#BDC3FF",
+      "warning_text": "#E9C183",
+      "warning_surface": "#3A3020",
+      "danger_text": "#FFADB7",
+      "danger_surface": "#3D262F",
+      "control_border": "#778299",
+      "navigation_selected": "#2B304D"
+    }
+  },
+  "type": {
+    "family": "Segoe UI Variable, Segoe UI, Microsoft YaHei UI, system-ui, sans-serif",
+    "page_title": 28,
+    "hero_title": 36,
+    "section_title": 17,
+    "body": 14,
+    "control": 13,
+    "caption": 12,
+    "line_height": 1.6
+  },
+  "space": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40
+  ],
+  "radius": {
+    "card": 12,
+    "control": 8,
+    "badge": 5,
+    "dialog": 16
+  },
+  "layout": {
+    "sidebar": 200,
+    "titlebar": 36,
+    "topbar": 56,
+    "page_padding": 32,
+    "gap": 24,
+    "summary_width": 300,
+    "target_width": 1440,
+    "target_height": 960,
+    "minimum_width": 1100,
+    "minimum_height": 720
+  },
+  "components": {
+    "button_height": 36,
+    "input_height": 40,
+    "nav_height": 40,
+    "table_row_min_height": 64,
+    "dialog_width": 560,
+    "focus_width": 3,
+    "focus_offset": 3
+  },
+  "motion": {
+    "duration_ms": 140,
+    "reduced_motion": "remove transform transitions"
+  },
+  "status": "design contract; not product code"
+}

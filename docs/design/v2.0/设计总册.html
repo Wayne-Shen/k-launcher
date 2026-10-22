@@ -1,0 +1,4372 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>K Launcher · 完整设计总册</title><style>*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#20232b;font:15px/1.9 'Segoe UI','Microsoft YaHei UI',system-ui,sans-serif}a{color:#4c55d8;text-decoration:none}a:hover{text-decoration:underline}.cover{max-width:1260px;margin:35px auto 0;padding:44px;background:#1f253e;color:#f4f7ef;border-radius:20px}.cover p{color:#c8cee5}.cover h1{font-size:40px;line-height:1.3;margin:12px 0 22px}.kicker{font-size:12px;letter-spacing:3px;color:#b6bfe5}.toplinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.toplinks a{background:#e5e8ff;color:#343b79;padding:8px 15px;border-radius:8px;font-weight:600}.layout{max-width:1260px;margin:28px auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px}.toc{position:sticky;top:20px;align-self:start;background:#eef0f7;padding:20px;border-radius:12px;font-size:12px;line-height:1.7}.toc a{display:block;padding:7px 0}.doc{background:white;padding:35px;border-radius:14px;border:1px solid #e2e5eb;margin-bottom:24px;overflow:hidden}.doc h1{font-size:27px;line-height:1.5;margin:0 0 22px}.doc h2{font-size:21px;margin:32px 0 15px;padding-top:12px;border-top:1px solid #e2e5eb}.doc h3{font-size:17px;margin:24px 0 10px}p{margin:12px 0}table{font-size:12px;line-height:1.7;border-collapse:collapse;width:100%;margin:20px 0;display:block;overflow:auto}th,td{text-align:left;border:1px solid #e2e5eb;padding:10px 12px;min-width:65px}th{background:#eef0f7;font-weight:600}pre{background:#202530;color:#d2d9e8;padding:18px;border-radius:9px;font:12px/1.8 Consolas,'Microsoft YaHei UI',monospace;overflow:auto}code{font-size:.87em;background:#eef0f7;padding:1px 4px;border-radius:4px}pre code{background:transparent;padding:0;color:inherit}blockquote{border-left:4px solid #9099dd;background:#f4f5fb;margin:20px 0;padding:8px 18px}li{margin:6px 0}.diagram{margin:22px 0;background:#f6f7fb;border:1px solid #e2e5eb;border-radius:12px;padding:15px;overflow:auto}.diagram svg{width:100%;height:auto;min-width:420px}.diagram figcaption{font-size:11px;color:#626875;text-align:center}details{font-size:12px;color:#626875}footer{max-width:1260px;margin:20px auto 50px;font-size:12px;color:#626875}h1,h2,h3{scroll-margin-top:20px}.doc:target{outline:2px solid #a9b0ff}@media(max-width:800px){.cover{margin:12px;padding:25px}.cover h1{font-size:30px}.layout{display:block;margin:12px}.toc{position:static;margin-bottom:18px}.doc{padding:22px}footer{padding:20px}}@media print{body{background:#fff;font-size:10pt}.cover{background:#fff;color:#20232b;page-break-after:always;padding:30px 0;margin:0}.cover p{color:#626875}.toc,.toplinks{display:none}.layout{display:block;margin:0;max-width:none}.doc{border:0;padding:0;border-radius:0;break-before:page;margin:0;overflow:visible}.doc h1{font-size:23pt}.doc h2{font-size:15pt;break-after:avoid}.doc h3{break-after:avoid}table{display:table;font-size:8pt;line-height:1.5}tr{break-inside:avoid}th,td{padding:6px}pre{white-space:pre-wrap;background:#f3f5ef;color:#20232b;overflow:visible}.diagram svg{min-width:0}.diagram{break-inside:avoid}a{color:inherit}footer{margin:20px 0}*{print-color-adjust:exact}}</style></head><body><header class="cover"><div class="kicker">K LAUNCHER / DESIGN HANDOFF 2.0</div><h1>K Launcher<br>设计与实施规格 2.0</h1><p>Windows 11 · Rust + Tauri 2 + React · 本地个人使用</p><p>2026-10-22 · 只交付规格与静态交互原型，尚未开始产品编码。</p><div class="toplinks"><a href="视觉原型/index.html">打开高保真原型 →</a><a href="视觉原型/visual-spec.html">查看视觉规范 →</a><a href="视觉原型/desktop-board.html">1440桌面画板 →</a><a href="AGENTS.md">AGENTS.md</a></div></header><div class="layout"><nav class="toc"><strong>目录 / 12份规格</strong><a href="#doc-1">01-产品需求PRD</a><a href="#doc-2">02-系统与模块架构</a><a href="#doc-3">03-数据模型与持久化契约</a><a href="#doc-4">04-任务队列与下载安装设计</a><a href="#doc-5">05-状态机与异常路径</a><a href="#doc-6">06-安全隐私与迁移</a><a href="#doc-7">07-公开研究与来源核实</a><a href="#doc-8">08-验收矩阵与阶段门禁</a><a href="#doc-9">09-视觉与交互规范</a><a href="#doc-10">10-实施任务清单</a><a href="#doc-11">11-实施契约与一致性决策</a><a href="#doc-12">12-页面操作与实现追踪</a><hr><a href="README.md">交付说明</a><a href="研究证据/核实记录.json">接口核实记录</a><span>可用浏览器打印保存PDF；表格较宽，建议横向或A3。未提供预渲染PDF。</span></nav><main><section class="doc" id="doc-1"><h1>K Launcher · Minecraft Java 启动器 PRD</h1>
+<p>版本：设计基线 2.0 · 2026-10-22（Asia/Shanghai）</p>
+<p>状态：供分阶段实现；本交付不包含产品代码。产品名“K Launcher”，按用户确认固定。</p>
+<p>平台：Windows 11 x64 桌面；Rust + Tauri 2 + React + TypeScript。ARM64 原生支持不属于首版验收范围。</p>
+<h2>1. 已确认的目标与前文审视</h2>
+<p>用户已确认：仅 Windows 11；本地个人使用、不对外分发；逐步覆盖 PCL2 核心能力；必须能下载 Minecraft；AI 后置；需要详细规格与真实视觉设计，由其他 coding agents 实现。</p>
+<p>此前聊天的用户消息已读取，三段助手答复均仅返回内容引用标记，没有可审阅正文。因此这里不声称“验证了旧架构”。本包重建可追踪的设计基线；若后续获得旧全文，按 ADR 流程合并，不能覆盖上述硬性约束。</p>
+<p>产品价值：从“我要玩某个版本/整合包”到“知道安装了什么、发生了什么、怎样恢复”的本地工作台。下载、安装、实例、Mod、Java、登录与启动组成完整闭环。下载不是辅助入口，也不能被“只导入已有游戏”替代。</p>
+<h2>2. 范围与优先级</h2>
+<p>P0＝首个可用闭环必须具备；P1＝核心覆盖阶段必须具备；P2＝完成核心后增强。P0/P1 是功能优先级，M0–M6 是执行阶段，见任务清单。</p>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>能力</th>
+<th>优先级/阶段</th>
+<th>明确边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FR-01</td>
+<td>首次启动、目录与空间检测、WebView2 检查</td>
+<td>P0/M1</td>
+<td>默认用户目录，可选 D 盘；不申请管理员权限</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>官方版本目录、正式版/快照过滤、历史版本</td>
+<td>P0/M2</td>
+<td>数据驱动；不写死“最新版本”；老版本可见但支持级别单独标记</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>原版客户端、依赖库、资源、日志配置下载与校验</td>
+<td>P0/M2</td>
+<td>官方元数据为根；支持重试、断点、修复；不打包游戏资源</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>独立实例创建/复制/重命名/删除与版本锁定</td>
+<td>P0/M2</td>
+<td>每实例隔离 saves/mods/config；依赖缓存共享</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Java 检测、兼容选择、下载、手动路径</td>
+<td>P0/M2</td>
+<td>覆盖 8/17/21/25 的已验证组合；以版本与 Loader 元数据为准</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Microsoft 登录、账号切换、刷新、正版状态</td>
+<td>P0/M3</td>
+<td>自有 client ID；登录审批作为前置风险门；不借用其他启动器身份</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>启动预检、进程管理、日志、失败诊断</td>
+<td>P0/M3</td>
+<td>不修改用户存档；只对有明确证据的错误给建议</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>持久任务队列、暂停/恢复/取消、失败项重试</td>
+<td>P0/M2</td>
+<td>UI 退出不会“假完成”；重启可恢复</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Fabric、Forge、NeoForge，后续 Quilt 安装</td>
+<td>P1/M4</td>
+<td>分适配器；同实例一个主 Loader；不拼凑不兼容组合</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>本地 Mod 管理、启停、版本识别、更新预览</td>
+<td>P1/M5</td>
+<td>不承诺检测所有运行期冲突；未知文件不自动删除</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Modrinth 搜索/详情/依赖安装/资源包与光影</td>
+<td>P1/M5</td>
+<td>绑定目标实例的 MC/Loader/客户端条件</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>mrpack 导入；CurseForge 清单、普通 ZIP 识别</td>
+<td>P1/M5</td>
+<td>mrpack 完整支持；CF 下载缺口明确要求手动文件，不能伪报支持</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>日志导出、备份恢复、已有 PCL/官方目录迁移</td>
+<td>P1/M6</td>
+<td>首先复制导入；不读取 PCL 账号密钥</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>主题、内存、代理/限速、缓存清理、账户与隐私</td>
+<td>P0/M1–M3</td>
+<td>默认无遥测；全局配置允许实例覆盖</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>更换 MC/Loader 的克隆升级与回滚</td>
+<td>P1/M6</td>
+<td>先生成兼容与 Mod 差异；禁止直接覆盖运行中的实例</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>皮肤/披风展示与官方资料链接</td>
+<td>P2</td>
+<td>首先只读；上传等账号写操作单列需求</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>规则诊断增强、AI 日志解释</td>
+<td>P2/M7</td>
+<td>可选、显式发送脱敏内容；不阻塞核心功能</td>
+</tr>
+</tbody></table>
+<p>不在首轮范围：联机穿透、服务器托管、Bedrock、macOS/Linux、启动器商店、账号代登、离线伪造身份、远程插件执行、自动更新发布系统。个人使用不等于可以忽略上游接口权限；仅保留必要的依赖许可与来源记录，不引入分发后台。</p>
+<h2>3. 支持矩阵与完成定义</h2>
+<table>
+<thead>
+<tr>
+<th>层级</th>
+<th>计划验证组合</th>
+<th>策略</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>L1 首版承诺</td>
+<td>原版 1.20.1/Java17，1.21.1/Java21，26.1/Java25</td>
+<td>全量下载、首次启动到主菜单、断网重启验证</td>
+</tr>
+<tr>
+<td>L2 核心承诺</td>
+<td>Fabric 1.21.1；Forge 1.20.1；NeoForge 1.21.1</td>
+<td>固定经过测试的 Loader build；版本从上游查询，不写死原型示例</td>
+</tr>
+<tr>
+<td>L3 旧版扩展</td>
+<td>1.12.2/Java8、其他老版及 Quilt</td>
+<td>M4 专项样例通过后标记支持；否则“尚未验证”，不承诺自动安装成功</td>
+</tr>
+<tr>
+<td>L4 实验</td>
+<td>最新快照、新 Java/新 Loader</td>
+<td>默认隐藏，用户开启实验版本后可见；元数据能解析不等于已验收</td>
+</tr>
+</tbody></table>
+<p>官方 26.1 已要求 Java25，不能沿用“新版本全部 Java21”的旧经验。上述版本是固定验收样本，不表示它们是当前最新版本。官方变动见研究文档 [R04]。</p>
+<p>首个可用版完成＝在干净 Windows 11 用户环境下，不手动拼接文件，完成目录设置→登录→选择正式版→下载 Java/客户端/资源→创建实例→启动到游戏主菜单→关闭后再次启动。若自身 client ID 未获 Minecraft API 接入，M3 不能标记通过，其他阶段可以继续，不用假账号绕过。</p>
+<h2>4. 核心用户旅程</h2>
+<h3>J1 从零安装并游玩</h3>
+<ol>
+<li>打开应用：读取本地数据；无实例时显示简明三步引导，先选择数据目录，再登录/浏览版本。</li>
+<li>“安装游戏”：正式版默认选中，显示列表更新时间与来源；快照需主动开启。</li>
+<li>选择版本→可选一个兼容 Loader→实例名称与隔离目录→Java/空间预检。</li>
+<li>右栏显示安装摘要：下载估算、缓存复用、预计磁盘占用、Java、资源来源；未知大小显示“估算中”，不能显示 0。</li>
+<li>“确认并安装”生成不可变安装计划；点击只创建一个任务。关闭向导不取消任务。</li>
+<li>下载→校验→构建→提交实例；期间可以浏览其他页面。</li>
+<li>完成进入实例详情；“启动游戏”预检账号与文件，启动后显示“运行中”和日志入口。</li>
+</ol>
+<h3>J2 给既有实例装 Mod</h3>
+<p>从实例“Mod 管理”进入，默认“已安装”；“发现 Mod”继承 MC/Loader 筛选。选中项目后展示版本、依赖、来源与更新范围；安装前一屏确认必需依赖。可选依赖默认不选。冲突或没有客户端兼容版本时阻止确认。下载不立即替换正在使用的文件；提交后更新锁文件。更新失败保留旧版。</p>
+<h3>J3 下载失败与恢复</h3>
+<p>任务卡显示阶段、已验证文件数、已传输字节、速度、来源与可执行操作。网络错误自动有限退避；超限转“需要处理”，显示最后错误和“重试失败项”。磁盘不足不盲重试，允许“更改目录并重新计划”或清理后继续。重启应用显示恢复提示，不自动运行未知状态的安装处理器。</p>
+<h3>J4 老实例迁入</h3>
+<p>选择 PCL 或 .minecraft 根目录→只读扫描→列出隔离方式、MC/Loader、大小、未知内容→选择实例和复制目标→核对磁盘空间→复制与校验→修复缺失依赖→用户重新登录→首次启动。源目录不变；不迁移注册表、凭据、PCL 可执行配置脚本。</p>
+<h2>5. 页面与信息架构</h2>
+<table>
+<thead>
+<tr>
+<th>页面/路由</th>
+<th>主要内容</th>
+<th>主操作</th>
+<th>必需状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首页 /home</td>
+<td>当前实例、最近实例、运行/下载摘要</td>
+<td>启动当前实例/安装游戏</td>
+<td>无实例、就绪、登录过期、运行中、服务不可达</td>
+</tr>
+<tr>
+<td>实例库 /instances</td>
+<td>卡片/搜索、版本/Loader、最近使用</td>
+<td>选择、详情、复制、删除</td>
+<td>空、扫描中、未知、损坏、被占用</td>
+</tr>
+<tr>
+<td>游戏安装 /install</td>
+<td>版本选择、Loader、命名、Java、摘要</td>
+<td>确认并安装</td>
+<td>加载、缓存过期、无结果、不兼容、空间不足</td>
+</tr>
+<tr>
+<td>实例详情 /instance/:id</td>
+<td>概览、组件、参数、存档入口、日志</td>
+<td>启动、修复、克隆升级</td>
+<td>Ready、Installing、RepairRequired、Running</td>
+</tr>
+<tr>
+<td>Mod 管理 /mods</td>
+<td>已安装/发现、兼容过滤、依赖计划</td>
+<td>安装/启停/更新</td>
+<td>空、未知、冲突、外部文件变动、待重启</td>
+</tr>
+<tr>
+<td>下载任务 /tasks</td>
+<td>活动/需处理/已完成、子步骤</td>
+<td>暂停、继续、重试、取消</td>
+<td>未知总量、退避、校验、提交、恢复</td>
+</tr>
+<tr>
+<td>账号 /accounts</td>
+<td>账号摘要、验证时刻、接入状态</td>
+<td>登录、切换、移除</td>
+<td>登录中、取消、无权益、无档案、API受限</td>
+</tr>
+<tr>
+<td>设置 /settings</td>
+<td>常规、Java、下载、存储、隐私</td>
+<td>保存、检测、清理</td>
+<td>未保存、字段错误、目录不可写</td>
+</tr>
+<tr>
+<td>日志诊断 /logs</td>
+<td>运行选择、搜索、等级过滤、建议</td>
+<td>脱敏预览、导出</td>
+<td>无日志、正常退出、崩溃、无法读取</td>
+</tr>
+</tbody></table>
+<h2>6. 交互规则与文案</h2>
+<ul>
+<li>用户显示名与磁盘目录 ID 分离；名称 1–64 字符，去首尾空格，禁止空名；内部目录只用 UUID，不因重命名改路径。</li>
+<li>全局默认：自动匹配 Java、实例内存 4 GiB（设备允许时）、下载总并发8/单域4；这些是产品默认值，需在 Windows 性能验收后调整，不宣称最优。</li>
+<li>任何“安装”显示目标实例和影响文件数；任何删除显示是否含 saves，并默认进入应用回收站，可恢复7天。清理永久删除需再次确认范围。</li>
+<li>启动前 Esc 取消预检；启动进程后 Esc 不杀进程。停止游戏先请求正常关闭，超时再显示强制结束确认。</li>
+<li>离线浏览与已有文件校验可用。仅先前成功验证的同一账号可进入受限离线启动路径；明确显示“离线，本次不刷新授权”，不能把 API403 或无权益转为离线成功。是否能运行取决于游戏版本，见状态机。</li>
+<li>启动按钮旁持久在线账号与实例信息；登录失效不偷偷改用其他账号。</li>
+<li>所有失败提示按“发生了什么→影响→可执行操作→详情码”组成。例如：“磁盘空间不足，安装尚未提交。释放至少 2.4 GiB 后继续。DISK_SPACE_LOW”。</li>
+<li>原型所有数据、速度、版本组合均为演示；登录/启动/网络/安装只演示交互，不执行真实系统操作。</li>
+</ul>
+<h2>7. 非功能需求与测量办法</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>指标/预算</th>
+<th>测试条件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NFR-01</td>
+<td>本地首页冷开可交互≤2.5秒；热开≤1秒，目标值</td>
+<td>Win11 x64、16GB、SSD、100实例；以20次 p95计；网络不阻塞首屏</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td>空闲工作集≤200MiB目标；下载时≤350MiB目标</td>
+<td>WebView2含子进程；持续10分钟测 p95；超标需记录原因与优化任务</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td>1000 Mod列表筛选 p95≤200ms</td>
+<td>索引已加载；不在主线程解析JAR；列表虚拟化</td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td>下载/哈希/解压期间界面响应≤100ms目标</td>
+<td>1万个资源文件；限并发I/O；仅节流显示事件</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td>不得把未校验文件标记可用；崩溃恢复不丢存档</td>
+<td>任务每个提交边界注入终止；全部安全性用例必须通过</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td>100/125/150/200%缩放，键盘完整操作</td>
+<td>最小窗口1100×720 DIP；超出区域内部滚动；深色/高对比按系统适配</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td>无遥测默认、日志无token、请求验证TLS</td>
+<td>凭据扫描、导出预览、代理错误、证书错误专项</td>
+</tr>
+</tbody></table>
+<h2>8. 决策与待验证项</h2>
+<p>已定：SQLite为元数据真相源；实例显式隔离；共享缓存只读；下载后原子提交；原生账号凭据存储；登录走系统浏览器；AI不进入核心依赖；普通用户权限安装运行。</p>
+<p>仍需 M0 证据：自有 Microsoft client ID 与 Minecraft API 权限；Win11 设备CPU/内存；代理环境；Forge/NeoForge 安装器兼容样例；Adoptium固定Java构建可用性；实际旧实例目录。缺失时先用固定夹具完成模块设计，不降低验收门槛。</p>
+<h2>9. 成功标准</h2>
+<p>核心完成以“验收矩阵全部 P0/P1 通过”为准，不以页面数量或能弹出Java窗口为准。每次交付都必须附真实Windows结果、固定版本/Loader/Java构建号、故障恢复证据、已知限制和可复现步骤；与原型不同的交互必须说明依据。</p>
+</section><section class="doc" id="doc-2"><h1>系统与模块架构</h1>
+<p>设计基线 2.0 · 本文中的模块、接口、路径均为未来实现契约，不是已存在的产品源码。</p>
+<h2>1. 分层与信任边界</h2>
+<figure class="diagram">
+
+<!-- Generated by graphviz version 14.1.3 (20260303.0454)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="472pt" height="355pt"
+ viewBox="0.00 0.00 472.00 355.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="diagram-1-graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 340.64)">
+<title>G</title>
+<!-- UI -->
+<g id="diagram-1-node1" class="node">
+<title>UI</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M361.07,-326.24C361.07,-326.24 283.83,-326.24 283.83,-326.24 277.83,-326.24 271.83,-320.24 271.83,-314.24 271.83,-314.24 271.83,-302.24 271.83,-302.24 271.83,-296.24 277.83,-290.24 283.83,-290.24 283.83,-290.24 361.07,-290.24 361.07,-290.24 367.07,-290.24 373.07,-296.24 373.07,-302.24 373.07,-302.24 373.07,-314.24 373.07,-314.24 373.07,-320.24 367.07,-326.24 361.07,-326.24"/>
+<text xml:space="preserve" text-anchor="middle" x="322.45" y="-304.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">React 本地展示层</text>
+</g>
+<!-- IPC -->
+<g id="diagram-1-node2" class="node">
+<title>IPC</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M362.74,-261.24C362.74,-261.24 282.16,-261.24 282.16,-261.24 276.16,-261.24 270.16,-255.24 270.16,-249.24 270.16,-249.24 270.16,-227.16 270.16,-227.16 270.16,-221.16 276.16,-215.16 282.16,-215.16 282.16,-215.16 362.74,-215.16 362.74,-215.16 368.74,-215.16 374.74,-221.16 374.74,-227.16 374.74,-227.16 374.74,-249.24 374.74,-249.24 374.74,-255.24 368.74,-261.24 362.74,-261.24"/>
+<text xml:space="preserve" text-anchor="middle" x="322.45" y="-241.8" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">Tauri命令边界</text>
+<text xml:space="preserve" text-anchor="middle" x="322.45" y="-227.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">输入/权限/状态校验</text>
+</g>
+<!-- UI&#45;&gt;IPC -->
+<g id="diagram-1-edge1" class="edge">
+<title>UI&#45;&gt;IPC</title>
+<path fill="none" stroke="#7d88bc" d="M322.45,-290.07C322.45,-283.71 322.45,-276.3 322.45,-269.13"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="324.73,-269.53 322.45,-263.03 320.18,-269.53 324.73,-269.53"/>
+</g>
+<!-- APP -->
+<g id="diagram-1-node3" class="node">
+<title>APP</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M363.91,-186.16C363.91,-186.16 280.99,-186.16 280.99,-186.16 274.99,-186.16 268.99,-180.16 268.99,-174.16 268.99,-174.16 268.99,-162.16 268.99,-162.16 268.99,-156.16 274.99,-150.16 280.99,-150.16 280.99,-150.16 363.91,-150.16 363.91,-150.16 369.91,-150.16 375.91,-156.16 375.91,-162.16 375.91,-162.16 375.91,-174.16 375.91,-174.16 375.91,-180.16 369.91,-186.16 363.91,-186.16"/>
+<text xml:space="preserve" text-anchor="middle" x="322.45" y="-164.56" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">应用用例与领域计划</text>
+</g>
+<!-- IPC&#45;&gt;APP -->
+<g id="diagram-1-edge2" class="edge">
+<title>IPC&#45;&gt;APP</title>
+<path fill="none" stroke="#7d88bc" d="M322.45,-214.92C322.45,-208.24 322.45,-200.86 322.45,-194.02"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="324.73,-194.32 322.45,-187.82 320.18,-194.32 324.73,-194.32"/>
+</g>
+<!-- TASK -->
+<g id="diagram-1-node4" class="node">
+<title>TASK</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M307.73,-116.12C307.73,-116.12 201.17,-116.12 201.17,-116.12 195.17,-116.12 189.17,-110.12 189.17,-104.12 189.17,-104.12 189.17,-92.12 189.17,-92.12 189.17,-86.12 195.17,-80.12 201.17,-80.12 201.17,-80.12 307.73,-80.12 307.73,-80.12 313.73,-80.12 319.73,-86.12 319.73,-92.12 319.73,-92.12 319.73,-104.12 319.73,-104.12 319.73,-110.12 313.73,-116.12 307.73,-116.12"/>
+<text xml:space="preserve" text-anchor="middle" x="254.45" y="-94.52" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">任务DAG / 事件 / lease</text>
+</g>
+<!-- APP&#45;&gt;TASK -->
+<g id="diagram-1-edge3" class="edge">
+<title>APP&#45;&gt;TASK</title>
+<path fill="none" stroke="#7d88bc" d="M305.29,-149.99C296.82,-141.51 286.48,-131.17 277.35,-122.03"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="279.11,-120.58 272.91,-117.59 275.9,-123.8 279.11,-120.58"/>
+</g>
+<!-- AUTH -->
+<g id="diagram-1-node8" class="node">
+<title>AUTH</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M431.41,-121.16C431.41,-121.16 351.49,-121.16 351.49,-121.16 345.49,-121.16 339.49,-115.16 339.49,-109.16 339.49,-109.16 339.49,-87.08 339.49,-87.08 339.49,-81.08 345.49,-75.08 351.49,-75.08 351.49,-75.08 431.41,-75.08 431.41,-75.08 437.41,-75.08 443.41,-81.08 443.41,-87.08 443.41,-87.08 443.41,-109.16 443.41,-109.16 443.41,-115.16 437.41,-121.16 431.41,-121.16"/>
+<text xml:space="preserve" text-anchor="middle" x="391.45" y="-101.72" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">Windows凭据</text>
+<text xml:space="preserve" text-anchor="middle" x="391.45" y="-87.32" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">OAuth / 进程管理</text>
+</g>
+<!-- APP&#45;&gt;AUTH -->
+<g id="diagram-1-edge7" class="edge">
+<title>APP&#45;&gt;AUTH</title>
+<path fill="none" stroke="#7d88bc" d="M339.86,-149.99C347,-142.95 355.44,-134.63 363.4,-126.78"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="364.71,-128.68 367.74,-122.5 361.52,-125.44 364.71,-128.68"/>
+</g>
+<!-- NET -->
+<g id="diagram-1-node5" class="node">
+<title>NET</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M156.9,-46.08C156.9,-46.08 12,-46.08 12,-46.08 6,-46.08 0,-40.08 0,-34.08 0,-34.08 0,-12 0,-12 0,-6 6,0 12,0 12,0 156.9,0 156.9,0 162.9,0 168.9,-6 168.9,-12 168.9,-12 168.9,-34.08 168.9,-34.08 168.9,-40.08 162.9,-46.08 156.9,-46.08"/>
+<text xml:space="preserve" text-anchor="middle" x="84.45" y="-26.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">Provider适配器</text>
+<text xml:space="preserve" text-anchor="middle" x="84.45" y="-12.24" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">官方元数据 / Modrinth / Loader</text>
+</g>
+<!-- TASK&#45;&gt;NET -->
+<g id="diagram-1-edge4" class="edge">
+<title>TASK&#45;&gt;NET</title>
+<path fill="none" stroke="#7d88bc" d="M214.16,-79.8C193.16,-70.77 167.07,-59.56 143.81,-49.56"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="144.95,-47.57 138.08,-47.1 143.15,-51.75 144.95,-47.57"/>
+</g>
+<!-- FILES -->
+<g id="diagram-1-node6" class="node">
+<title>FILES</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M308.07,-46.08C308.07,-46.08 200.83,-46.08 200.83,-46.08 194.83,-46.08 188.83,-40.08 188.83,-34.08 188.83,-34.08 188.83,-12 188.83,-12 188.83,-6 194.83,0 200.83,0 200.83,0 308.07,0 308.07,0 314.07,0 320.07,-6 320.07,-12 320.07,-12 320.07,-34.08 320.07,-34.08 320.07,-40.08 314.07,-46.08 308.07,-46.08"/>
+<text xml:space="preserve" text-anchor="middle" x="254.45" y="-26.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">安全文件服务</text>
+<text xml:space="preserve" text-anchor="middle" x="254.45" y="-12.24" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">缓存 / staging / journal</text>
+</g>
+<!-- TASK&#45;&gt;FILES -->
+<g id="diagram-1-edge5" class="edge">
+<title>TASK&#45;&gt;FILES</title>
+<path fill="none" stroke="#7d88bc" d="M254.45,-79.8C254.45,-72.17 254.45,-62.99 254.45,-54.29"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="256.73,-54.51 254.45,-48.01 252.18,-54.51 256.73,-54.51"/>
+</g>
+<!-- DB -->
+<g id="diagram-1-node7" class="node">
+<title>DB</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M420.41,-46.08C420.41,-46.08 352.49,-46.08 352.49,-46.08 346.49,-46.08 340.49,-40.08 340.49,-34.08 340.49,-34.08 340.49,-12 340.49,-12 340.49,-6 346.49,0 352.49,0 352.49,0 420.41,0 420.41,0 426.41,0 432.41,-6 432.41,-12 432.41,-12 432.41,-34.08 432.41,-34.08 432.41,-40.08 426.41,-46.08 420.41,-46.08"/>
+<text xml:space="preserve" text-anchor="middle" x="386.45" y="-26.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">SQLite真相源</text>
+<text xml:space="preserve" text-anchor="middle" x="386.45" y="-12.24" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">revision / 快照</text>
+</g>
+<!-- TASK&#45;&gt;DB -->
+<g id="diagram-1-edge6" class="edge">
+<title>TASK&#45;&gt;DB</title>
+<path fill="none" stroke="#7d88bc" d="M285.73,-79.8C301.62,-71.01 321.25,-60.14 338.95,-50.34"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="339.98,-52.37 344.56,-47.23 337.77,-48.39 339.98,-52.37"/>
+</g>
+</g>
+</svg>
+<figcaption>系统模块 · 设计示意，详细状态以正文为准</figcaption></figure><details><summary>查看原始Mermaid定义</summary><pre><code>flowchart TB
+  UI[React 展示层 / 本地资源] --&gt; IPC[Tauri 命令边界 / 参数校验]
+  IPC --&gt; APP[应用用例 / 幂等与权限]
+  APP --&gt; CORE[领域核心 / 计划与状态机]
+  APP --&gt; TASK[任务编排 / DAG与持久事件]
+  CORE --&gt; PORT[端口接口]
+  TASK --&gt; PORT
+  PORT --&gt; NET[上游适配器 / HTTPS]
+  PORT --&gt; FILE[文件服务 / 安全路径与原子写入]
+  PORT --&gt; DB[SQLite / 仓储]
+  PORT --&gt; AUTH[Windows凭据 / 认证]
+  PORT --&gt; PROC[受控Java与游戏进程]
+  NET --&gt; UP[不可信外部元数据 / 内容]
+</code></pre></details>
+<p>React 只展示DTO和用户意图，不能持有refresh token、直接下载资源、自由读写磁盘或运行命令。Rust持有业务事实与所有网络/系统副作用。Tauri 2 只为主本地窗口授予具体能力；远程网页、Mod描述、登录站点不得获得IPC能力。来源：<a href="https://v2.tauri.app/security/capabilities/">Tauri Capabilities</a>。</p>
+<p>网络下载内容、压缩包、JAR、版本JSON、外部目录、日志均视为不可信输入。自定义Rust命令不会因启用capability就自动得到充分校验，每个命令仍需验证实例ID、允许的状态、路径令牌与revision。</p>
+<h2>2. 模块职责、所有权与替换边界</h2>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>拥有的事实</th>
+<th>输入→输出</th>
+<th>不得承担</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>App/Shell</td>
+<td>窗口、系统主题、导航</td>
+<td>用户意图→命令</td>
+<td>业务状态机</td>
+</tr>
+<tr>
+<td>Catalog</td>
+<td>上游版本目录快照</td>
+<td>Provider+过滤→目录+新鲜度</td>
+<td>创建文件</td>
+</tr>
+<tr>
+<td>VersionResolver</td>
+<td>版本继承、规则、库/参数</td>
+<td>固定元数据→ResolvedVersion</td>
+<td>发起网络请求</td>
+</tr>
+<tr>
+<td>InstallPlanner</td>
+<td>资源/步骤/空间/兼容</td>
+<td>固定选择+现有索引→InstallPlan</td>
+<td>实际修改实例</td>
+</tr>
+<tr>
+<td>TaskEngine</td>
+<td>DAG执行、lease、重试、取消</td>
+<td>Plan→事件与终态</td>
+<td>自己决定Loader版本</td>
+</tr>
+<tr>
+<td>DownloadService</td>
+<td>HTTP、Range、限速、校验</td>
+<td>ArtifactSpec→VerifiedArtifact</td>
+<td>修改Mod配置</td>
+</tr>
+<tr>
+<td>ContentStore</td>
+<td>缓存对象、引用、清理</td>
+<td>哈希+文件→ObjectRef</td>
+<td>管理存档</td>
+</tr>
+<tr>
+<td>InstanceService</td>
+<td>实例生命周期/revision</td>
+<td>创建/复制/删除→实例快照</td>
+<td>保存账号secret</td>
+</tr>
+<tr>
+<td>LoaderAdapters</td>
+<td>Fabric/Forge/NeoForge/Quilt差异</td>
+<td>MC+Loader pin→扩展计划</td>
+<td>通用UI逻辑</td>
+</tr>
+<tr>
+<td>RuntimeService</td>
+<td>Java发现/安装/探测</td>
+<td>Java约束→RuntimeRef</td>
+<td>固定所有新版本为Java21</td>
+</tr>
+<tr>
+<td>AccountService</td>
+<td>OAuth会话、刷新、权益快照</td>
+<td>AccountId→内存启动凭证</td>
+<td>将token回传UI</td>
+</tr>
+<tr>
+<td>LaunchService</td>
+<td>LaunchPlan、预检、子进程</td>
+<td>实例+账号→RunSession</td>
+<td>通过shell拼命令</td>
+</tr>
+<tr>
+<td>ContentService</td>
+<td>Modrinth、本地识别、依赖图</td>
+<td>目标实例+选择→变更计划</td>
+<td>承诺完整Mod兼容</td>
+</tr>
+<tr>
+<td>ImportExport</td>
+<td>外部格式解析、映射、恢复</td>
+<td>压缩包/目录令牌→导入计划</td>
+<td>覆盖源目录</td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>日志索引、规则、脱敏</td>
+<td>RunId→诊断与导出预览</td>
+<td>上传隐私数据</td>
+</tr>
+<tr>
+<td>Settings/Migrations</td>
+<td>类型配置/schema更新</td>
+<td>设置差异→验证/提交</td>
+<td>自动升级游戏存档</td>
+</tr>
+</tbody></table>
+<p>建议未来使用单Rust应用与内部模块，保持纯领域模块可离线测试；不采用微服务、Node后台、每个下载一个进程。依赖族固定为tokio、reqwest、serde、rusqlite（专用阻塞DB工作线程）、tracing；具体版本在T06核实并锁定。更换库族需ADR，不能让不同agent各选一套仓储。这里只定义选择，没有产品依赖文件。</p>
+<p>React使用TanStack Query管理服务端快照请求、React局部state管理未保存表单与筛选、CSS变量管理主题；任务真相不得放在前端store。无远程React页面，无嵌入式账号表单。</p>
+<h2>3. Rust端口契约</h2>
+<table>
+<thead>
+<tr>
+<th>契约</th>
+<th>方法语义</th>
+<th>错误/限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CatalogProvider</td>
+<td>fetch_catalog(etag), fetch_version(id,digest)</td>
+<td>返回原始字节摘要、来源、缓存验证时刻</td>
+</tr>
+<tr>
+<td>LoaderProvider</td>
+<td>list_compatible(mc), resolve(pin)</td>
+<td>UnknownCompatibility与Unsupported区分</td>
+</tr>
+<tr>
+<td>RuntimeProvider</td>
+<td>list(major,arch), resolve(build), probe(path_token)</td>
+<td>无匹配构建不自动替代其他major</td>
+</tr>
+<tr>
+<td>DownloadPort</td>
+<td>fetch(spec,cancel,progress)</td>
+<td>VerifiedArtifact或结构化失败；不返回未验完整文件</td>
+</tr>
+<tr>
+<td>CredentialPort</td>
+<td>store/get/delete(account_id,secret)</td>
+<td>secret类型不可序列化到日志</td>
+</tr>
+<tr>
+<td>ProcessPort</td>
+<td>spawn(executable,args,env,cwd), request_stop</td>
+<td>参数数组、受控可执行路径；返回pid+creation_time</td>
+</tr>
+<tr>
+<td>FilePort</td>
+<td>validate_root, staged_write, atomic_replace</td>
+<td>检查重解析点、同卷提交、目标锁</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td>transaction(expected_revision), snapshot</td>
+<td>乐观并发失败返回REVISION_CONFLICT</td>
+</tr>
+</tbody></table>
+<h2>4. IPC命令目录（逻辑契约）</h2>
+<p>所有命令请求：request_id（UUID）、contract_version=1、payload。所有变更命令包含idempotency_key和涉及实体的expected_revision。业务失败统一返回结构化error；UI文字由本地错误码映射，不显示上游raw token或完整认证响应。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>主要请求字段</th>
+<th>主要响应</th>
+<th>副作用/约束</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bootstrap</td>
+<td>无</td>
+<td>settings, instances_summary, active_tasks, account_summary, revision</td>
+<td>本地优先；网络刷新独立</td>
+</tr>
+<tr>
+<td>catalog.list</td>
+<td>channel, query, cursor</td>
+<td>items, next_cursor, fetched_at, stale</td>
+<td>只读缓存；主动刷新另传refresh=true</td>
+</tr>
+<tr>
+<td>install.preview</td>
+<td>mc_id, loader_pin?, name, root_token, java_policy</td>
+<td>plan_id, digest, steps, bytes?, disk_required, issues, expires_at</td>
+<td>快照计划；不下载游戏文件</td>
+</tr>
+<tr>
+<td>install.commit</td>
+<td>plan_id,digest,idempotency_key</td>
+<td>task_id, instance_id</td>
+<td>重新核查空间、版本revision；不静默替换计划</td>
+</tr>
+<tr>
+<td>task.list/get</td>
+<td>cursor/id</td>
+<td>snapshot, event_cursor</td>
+<td>不暴露带授权URL</td>
+</tr>
+<tr>
+<td>task.control</td>
+<td>task_id, action, expected_revision</td>
+<td>accepted, new_revision</td>
+<td>pause/resume/cancel/retry_failed；无非法跳转</td>
+</tr>
+<tr>
+<td>instance.get/list</td>
+<td>id/filter</td>
+<td>InstanceDTO</td>
+<td>只读</td>
+</tr>
+<tr>
+<td>instance.update</td>
+<td>id,expected_revision,patch</td>
+<td>InstanceDTO</td>
+<td>patch白名单；运行中禁止组件变更</td>
+</tr>
+<tr>
+<td>instance.clone/delete/restore（见11规范名）</td>
+<td>id,options,revision</td>
+<td>operation_id/task_id</td>
+<td>删除先回收；存档选项必须显式</td>
+</tr>
+<tr>
+<td>content.search</td>
+<td>instance_id,query,facets,cursor</td>
+<td>projects,page</td>
+<td>附固定兼容条件</td>
+</tr>
+<tr>
+<td>content.preview_change</td>
+<td>instance_id,selected_versions,action</td>
+<td>change_plan+依赖/冲突</td>
+<td>不写文件</td>
+</tr>
+<tr>
+<td>content.commit_change</td>
+<td>plan_id,digest,idempotency_key</td>
+<td>task_id</td>
+<td>实例独占写锁</td>
+</tr>
+<tr>
+<td>account.begin/cancel</td>
+<td>provider/session_id</td>
+<td>session_id, expires_at, status</td>
+<td>Rust打开系统浏览器；UI无授权URL自由输入</td>
+</tr>
+<tr>
+<td>account.remove/select</td>
+<td>account_id</td>
+<td>summary</td>
+<td>删除refresh secret；正在启动的会话不得被替换</td>
+</tr>
+<tr>
+<td>launch.preview/start（见11拆分字段）</td>
+<td>instance_id,account_id,revision</td>
+<td>preflight/run_id</td>
+<td>start前Rust内填token；UI只拿脱敏摘要</td>
+</tr>
+<tr>
+<td>run.stop/log_page</td>
+<td>run_id,force?/cursor/filter</td>
+<td>status/log_page</td>
+<td>force必须独立用户意图</td>
+</tr>
+<tr>
+<td>settings.validate/save</td>
+<td>patch,revision</td>
+<td>field_errors/settings</td>
+<td>保存前验证代理与路径；不把密码写JSON</td>
+</tr>
+<tr>
+<td>import.scan/preview/commit</td>
+<td>picker_token/selection/digest</td>
+<td>scan/plan/task</td>
+<td>用户选目录产生短期令牌；前端不传任意路径</td>
+</tr>
+<tr>
+<td>diagnostics.export_preview/commit</td>
+<td>run_id,redaction_choices</td>
+<td>preview_id/export_file</td>
+<td>本地导出；无自动上传</td>
+</tr>
+</tbody></table>
+<p>以上是领域命令概览，不是可各自猜测的函数签名。<strong>11文档与设计契约/命令目录.json定义唯一的规范命令名、请求字段、响应类型和变更规则</strong>；12文档将页面操作绑定至该目录。</p>
+<p>分页：默认50、最多200；大列表传摘要，日志按页64KiB。超长输入拒绝（查询≤256字符、用户名称≤64字符），不得截断后仍写入。</p>
+<h2>5. 事件契约与一致性</h2>
+<p>持久事件：event_id（单调序列）、entity_id、entity_revision、task_id?、kind、occurred_at（UTC）、payload、contract_version。持久kind见11第10节；task.progress是非持久通知，不使用event_id。</p>
+<ul>
+<li>命令持久提交后才发状态事件。先订阅并缓冲，再获取同一DB读事务内的snapshot+cursor，丢弃≤cursor的缓冲事件，再调用events.read补拉。握手、保留期和分页见11文档。</li>
+<li>进度通知每任务最多4次/秒，独立progress_seq并携execution_id；不增加实体revision，不用状态事件去重规则。每2秒或每8MiB持久化断点，取先到者。</li>
+<li>持久事件全局游标按实际记录补拉，不按实体筛选后猜缺口；实体revision只用于快照替换。通知可丢失，状态事件通过补拉恢复。超出保留窗口返回CURSOR_EXPIRED并重做握手。</li>
+<li>commands accepted不代表任务完成；订阅失联不应把任务变失败。</li>
+<li>离线不清空目录列表；显示上次验证时间。缓存TTL只是设计默认：版本目录15分钟、Loader30分钟、Mod搜索5分钟；允许手动刷新，服务端cache头优先。</li>
+</ul>
+<h2>6. 启动解析管线</h2>
+<ol>
+<li>读取实例revision与锁文件；获取实例运行锁，校验路径、磁盘、组件状态。</li>
+<li>递归解析inheritsFrom（循环检测/深度≤16），保留来源；缺失父版本产生补全计划，不能靠目录名猜mainClass。</li>
+<li>评估libraries与arguments规则：有rules默认不允许，依序匹配更新allow/disallow；条件含OS、arch、版本regex和features。未理解的必要条件不得静默忽略。</li>
+<li>合并继承链：标量由子覆盖；参数按字段规则追加；库用group:artifact:classifier:extension做冲突键，显式Loader替代优先；同坐标不同内容摘要冲突时拒绝；不是简单JSON深合并。</li>
+<li>解析client jar、assetIndex、resources、logging、native classifiers；排除extract.exclude；每次运行独立natives临时目录，安全解压。</li>
+<li>根据javaVersion.majorVersion、Loader约束、用户override求交集；启动前运行受控 <code>java -version</code> 探测缓存（路径+mtime+size，5秒超时）。不能只信文件名。</li>
+<li>生成LaunchPlan：executable、args数组、受限env、cwd、classpath、资源/原生库路径、窗口参数；所有placeholder必须解析，未知必要变量阻断。</li>
+<li>授权成功后在Rust内存注入access token等敏感参数；显示/导出均脱敏。Windows命令行长度接近限制时使用经过对应Java/版本验证的argfile或classpath JAR策略，不能随意改变旧版语义。</li>
+<li>启动不经过cmd/PowerShell；捕获stdout/stderr，跟踪进程与子进程，按会话保留日志。</li>
+</ol>
+<p>旧版minecraftArguments须使用经fixture验证的分词规则；不能按空格切字符串。资产virtual/map_to_resources、老版natives与旧Forge另有兼容适配，未通过样例前不能宣称通用兼容。</p>
+<h2>7. 架构决策记录</h2>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>决策</th>
+<th>原因/代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ADR-001</td>
+<td>单进程应用+受控Java子进程</td>
+<td>便于本地部署；异步和阻塞任务池需严格隔离</td>
+</tr>
+<tr>
+<td>ADR-002</td>
+<td>SQLite真相源+版本化实例锁文件</td>
+<td>DB支持任务原子事务；锁文件支持可读恢复，避免双写含糊</td>
+</tr>
+<tr>
+<td>ADR-003</td>
+<td>不可变计划→执行→提交</td>
+<td>能预览、审查、幂等；空间估算需保守</td>
+</tr>
+<tr>
+<td>ADR-004</td>
+<td>共享缓存文件复制到可变区域</td>
+<td>存档/Mod不能通过硬链接污染缓存；占用更多磁盘</td>
+</tr>
+<tr>
+<td>ADR-005</td>
+<td>认证在Rust，系统浏览器PKCE</td>
+<td>减少渲染层泄露；需自有应用注册与接入验证</td>
+</tr>
+<tr>
+<td>ADR-006</td>
+<td>实例升级先克隆</td>
+<td>保留可回退版本；需额外空间和存档说明</td>
+</tr>
+<tr>
+<td>ADR-007</td>
+<td>官方源优先、镜像可选且按哈希</td>
+<td>性能与可核实性平衡；不能把“同文件名”当可信</td>
+</tr>
+<tr>
+<td>ADR-008</td>
+<td>本地诊断规则先行，AI后置</td>
+<td>不引入在线依赖与隐私默认上传</td>
+</tr>
+</tbody></table>
+<p>新决策必须写明问题、备选、证据、受影响FR/AC、迁移影响；不能以“实现方便”取消下载、事务或校验要求。</p>
+<h2>8. v2.0补充决策</h2>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>冻结选择</th>
+<th>验收依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ADR-009</td>
+<td>Task与TaskExecution分离；失败作业可新尝试，旧execution不可改写</td>
+<td>AC31</td>
+</tr>
+<tr>
+<td>ADR-010</td>
+<td>事件订阅先缓冲，快照含游标；progress_seq独立</td>
+<td>AC32</td>
+</tr>
+<tr>
+<td>ADR-011</td>
+<td>单实例mutation lease在接受计划时获取；与运行lease互斥</td>
+<td>AC33</td>
+</tr>
+<tr>
+<td>ADR-012</td>
+<td>依赖投影统一复制；DPAPI用户范围secret文件；rusqlite单DB工作线程</td>
+<td>AC22/34</td>
+</tr>
+<tr>
+<td>ADR-013</td>
+<td>中性底色+靛蓝强调，token唯一来源；设计注释移入审阅工具</td>
+<td>AC30/40</td>
+</tr>
+</tbody></table>
+<p>详细协议、事务恢复、契约优先级与冻结门见11；页面追踪见12。</p>
+</section><section class="doc" id="doc-3"><h1>数据模型与持久化契约</h1>
+<p>这是逻辑数据字典与事务规范，不是SQL迁移文件。schema起始为1；后续实现可调整物理索引，但不能改变不变量。</p>
+<h2>1. 目录与真相源</h2>
+<p>默认配置根 <code>%LOCALAPPDATA%\KLauncher\</code>；默认数据根 <code>%USERPROFILE%\Games\KLauncher\</code>，首次启动可选其他本地NTFS卷。启动器安装目录与可变数据分开。首版不承诺网络盘/同步盘/可移动盘；检测到后说明风险并要求改用本地目录。</p>
+<pre><code class="language-text">配置根/
+  settings.json                 全局设置的可读导出，不含秘密
+  launcher.db                   元数据、任务、配置真相源（WAL）
+  backups/                      DB与配置迁移前备份
+  logs/                         应用日志（轮换）
+数据根/
+  objects/&lt;algorithm&gt;/&lt;prefix&gt;/&lt;digest&gt;  不可变已校验缓存
+  assets/indexes/ 与 assets/objects/     游戏兼容投影（可重建）
+  libraries/ 与 versions/               元数据及依赖兼容投影
+  runtimes/&lt;provider&gt;-&lt;build&gt;-x64/        托管Java（不改系统PATH）
+  instances/&lt;uuid&gt;/
+    instance.lock.json                  组件/内容锁定导出与恢复凭据
+    game/                              saves,mods,config,resourcepacks,shaderpacks等
+    runs/&lt;run-id&gt;/                      本次日志、natives、脱敏启动摘要
+  staging/&lt;operation-id&gt;/               下载/解压/处理器工作区（同目标卷）
+  trash/&lt;deletion-id&gt;/                  删除回收（默认7天）
+  exports/                             用户主动导出
+</code></pre>
+<p>DB是真相源，lock文件是带revision与digest的可恢复投影。DB事务提交后生成临时lock并原子替换；中断导致lock落后时按DB重建；如果DB损坏，只能进入只读恢复模式，用户确认后从经过schema/路径/摘要校验的lock重建元数据。不得依据时间戳把外部lock覆盖进DB。</p>
+<p>内容缓存与mutable game目录不得使用可写硬链接；v1依赖兼容投影统一复制，不使用hardlink/junction/symlink；只读属性不是可靠的隔离边界。运行前检查对象摘要。外部游戏可能修改库，因此必须允许投影重建，不把它作为缓存真相。</p>
+<h2>2. 通用字段</h2>
+<p>ID采用UUID；外部provider ID保留原样字符串，不转数字。时间存UTC RFC3339，UI按系统时区显示；elapsed使用单调时钟。size以u64字节表示、UI以MiB/GiB显示；所有IPC中的字节数、revision、event_cursor、progress_seq统一为十进制字符串（即便小于JS安全整数），禁止按数值大小切换类型。digest存algorithm+规范化小写hex。路径存path_id或根内相对路径；UI显示路径不直接作为授权路径。</p>
+<p>revision为递增u64；所有变更需expected_revision。enum未知值在读展示时标记Unsupported，在执行时阻断，不能默认成Ready。可选值缺失与空字符串区分。</p>
+<h2>3. 实体数据字典</h2>
+<table>
+<thead>
+<tr>
+<th>实体</th>
+<th>字段（类型、约束）</th>
+<th>关系/索引</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DataRoot</td>
+<td>id, display_path, canonical_volume_id, canonical_path, write_probe_at?, status, revision</td>
+<td>canonical路径唯一；卷ID变化标记离线</td>
+</tr>
+<tr>
+<td>Instance</td>
+<td>id, root_id, display_name, relative_dir, mc_version, loader_kind?, loader_version?, java_policy, memory_mib, status, revision, lock_digest, created_at,last_played_at?,deleted_at?</td>
+<td>root+relative_dir唯一，name不作为主键；root FK</td>
+</tr>
+<tr>
+<td>InstanceComponent</td>
+<td>instance_id,kind,provider,external_id,version,metadata_digest,artifact_id?,required_java_range?,ordinal</td>
+<td>(instance,kind)唯一，主Loader最多1个</td>
+</tr>
+<tr>
+<td>Account</td>
+<td>id,provider,profile_uuid?,display_name?,credential_ref,status,last_verified_at?,entitlement_state,expires_at?,revision</td>
+<td>credential_ref不含secret；profile_uuid按provider唯一</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>id,provider,build,major,arch,executable_path_id,managed,archive_digest?,probe_fingerprint,probe_result,verified_at,status</td>
+<td>provider+build+arch唯一</td>
+</tr>
+<tr>
+<td>MetadataSnapshot</td>
+<td>id,provider,resource_key,url_redacted,etag?,last_modified?,fetched_at,validated_at,raw_digest,schema_support,expires_at</td>
+<td>provider+resource_key+digest唯一；可保留多版本</td>
+</tr>
+<tr>
+<td>Artifact</td>
+<td>id,kind,size_expected?,hashes,cache_relpath,verified_at?,verification_level,status,provenance_snapshot_id</td>
+<td>优先hashes唯一；未校验不允许verified_at</td>
+</tr>
+<tr>
+<td>ArtifactReference</td>
+<td>artifact_id,owner_type,owner_id,role,created_at</td>
+<td>(artifact,owner,role)唯一；GC依赖它和活动lease</td>
+</tr>
+<tr>
+<td>InstallPlan</td>
+<td>id,kind,instance_id?,base_revision?,input_snapshot_ids,selection,payload_digest,bytes_missing?,disk_required,issues,created_at,expires_at</td>
+<td>不可变；commit必须校验digest</td>
+</tr>
+<tr>
+<td>Task</td>
+<td>id,parent_id?,plan_id,type,state,priority,revision,idempotency_key,created_at,updated_at,error_id?,cancel_requested</td>
+<td>idempotency_key在命令scope唯一</td>
+</tr>
+<tr>
+<td>TaskExecution</td>
+<td>id,task_id,ordinal,state,recovered_from_execution_id?,started_at,finished_at?,error_id?</td>
+<td>ordinal自1递增；每Task最多1个活动execution；结束记录不可改写</td>
+</tr>
+<tr>
+<td>OperationJournal</td>
+<td>id,task_id,execution_id,kind,phase,base_revision,target_revision,entry_manifest_ref,entry_cursor,updated_at</td>
+<td>phase与逐文件结果持久；entry含old/new digest和backup relpath；参见11恢复判定</td>
+</tr>
+<tr>
+<td>RecoveryAudit</td>
+<td>id,journal_id,prior_execution_id,recovery_execution_id?,decision,evidence_digest,created_at</td>
+<td>追加式恢复判定，保留中断历史；不得覆盖原execution结果</td>
+</tr>
+<tr>
+<td>IdempotencyReceipt</td>
+<td>scope,key,payload_digest,result_ref,created_at</td>
+<td>(scope,key)唯一；不同payload复用key拒绝；任务存在期间不清除</td>
+</tr>
+<tr>
+<td>TaskStep</td>
+<td>id,task_id,execution_id,prior_step_id?,kind,state,dependencies,attempt,not_before?,lease_owner?,lease_expires_at?,output_ref?,checkpoint_ref?</td>
+<td>(execution,id)唯一；依赖不得成环；旧execution步骤不可改写</td>
+</tr>
+<tr>
+<td>DownloadAttempt</td>
+<td>id,step_id,url_redacted,origin_id,status,offset_persisted,total?,etag?,last_modified?,accept_ranges?,part_path,attempt_no,error_id?</td>
+<td>同artifact单写lease</td>
+</tr>
+<tr>
+<td>ContentItem</td>
+<td>id,instance_id,kind,filename,enabled,hashes,provider?,project_id?,version_id?,mc_constraints?,loader_constraints?,local_metadata,origin,revision</td>
+<td>实例内Windows不区分大小写的文件名唯一</td>
+</tr>
+<tr>
+<td>DependencyEdge</td>
+<td>plan_id,from_version,to_project?,to_version?,type,reason</td>
+<td>required/optional/incompatible/embedded不合并</td>
+</tr>
+<tr>
+<td>RunSession</td>
+<td>id,instance_id,instance_revision,account_id,java_id,plan_digest,pid?,process_creation_time?,state,started_at?,ended_at?,exit_code?,log_ref</td>
+<td>每实例最多一个活动会话；pid单独不证明身份</td>
+</tr>
+<tr>
+<td>Event</td>
+<td>event_id,entity_id,entity_revision,kind,payload,occurred_at,contract_version</td>
+<td>event_id递增；按实体与时间索引</td>
+</tr>
+<tr>
+<td>ErrorRecord</td>
+<td>id,code,phase,retryable,user_action,source_status?,details_redacted,caused_by?,correlation_id</td>
+<td>原始认证响应不得保存</td>
+</tr>
+<tr>
+<td>MigrationRecord</td>
+<td>version,status,started_at,finished_at?,backup_ref,checksum</td>
+<td>迁移版本连续、不重复</td>
+</tr>
+<tr>
+<td>Deletion</td>
+<td>id,instance_id,trash_path,contains_saves,expires_at,state</td>
+<td>清空回收站前检查无活动引用</td>
+</tr>
+<tr>
+<td>Settings</td>
+<td>singleton_id,schema_version,revision,typed_payload</td>
+<td>DB持久配置；导出JSON为投影</td>
+</tr>
+</tbody></table>
+<h2>4. 实例锁文件示例（说明性）</h2>
+<pre><code class="language-json">{
+  &quot;schema_version&quot;: 1,
+  &quot;instance_id&quot;: &quot;2f37a2bf-ff1d-45ae-9f44-71f352c296de&quot;,
+  &quot;revision&quot;: 7,
+  &quot;name&quot;: &quot;远山生存&quot;,
+  &quot;minecraft&quot;: { &quot;id&quot;: &quot;1.21.1&quot;, &quot;metadata_ref&quot;: &quot;snapshot-id&quot; },
+  &quot;loader&quot;: { &quot;kind&quot;: &quot;fabric&quot;, &quot;version&quot;: &quot;示例：实施时固定已验证构建&quot;, &quot;metadata_ref&quot;: &quot;snapshot-id&quot; },
+  &quot;java&quot;: { &quot;mode&quot;: &quot;auto&quot;, &quot;required_major&quot;: 21 },
+  &quot;memory_mib&quot;: 4096,
+  &quot;content&quot;: [ { &quot;path&quot;: &quot;mods/example.jar&quot;, &quot;enabled&quot;: true, &quot;hashes&quot;: { &quot;sha512&quot;: &quot;示意，实际必须为完整hex&quot; }, &quot;provider&quot;: &quot;modrinth&quot;, &quot;project_id&quot;: &quot;project-id&quot;, &quot;version_id&quot;: &quot;version-id&quot; } ],
+  &quot;source&quot;: { &quot;kind&quot;: &quot;created&quot;, &quot;import_id&quot;: null }
+}
+</code></pre>
+<p>示例不是可直接导入的fixture；implementation必须使用真实完整摘要。lock不含绝对本机私有路径、token、邮箱、代理密码。外部同名文件变化将触发“外部修改待协调”，不能覆盖。</p>
+<h2>5. 设置层级与验证</h2>
+<p>默认值→全局设置→实例显式覆盖→本次启动临时覆盖。UI要显示“继承”与当前有效值，取消覆盖恢复继承。支持字段：语言/主题/缩放、默认数据根、下载总并发(1–16)/单域(1–8且≤总量)、限速(0不限速)、代理(system/direct/custom)、缓存预算、Java policy、内存、窗口尺寸、关闭行为、日志保留。</p>
+<p>内存：最小512MiB、步进256MiB、xms≤xmx；默认值以4GiB与可用物理内存预算取小，必须给OS预留至少max(2GiB,25%RAM)，无法满足需求时提示而不是偷偷超配。自定义JVM参数高级入口逐项记录，拒绝覆盖认证、classpath、主类与工作目录；不执行任意前后置脚本。</p>
+<p>代理凭据存凭据服务，设置只保存credential_ref；v1下载与认证代理共用已保存配置，分别持有隔离HTTP client；分流代理设置留待独立ADR。TLS错误没有“忽略证书”开关。</p>
+<h2>6. 关键事务与不变量</h2>
+<ul>
+<li>每实例最多一个被接受的变更作业，commit计划时获取持久mutation lease直到成功/取消/失败安全回滚；游戏运行lease与该lease互斥。失败若保留未回滚现场仍占锁并转NeedsAction。无实例写意图的纯缓存预取可并发。第二个写/启动返回INSTANCE_BUSY并链接占用任务；不等到文件交换才发现冲突。</li>
+<li>task.state=Succeeded要求所有必需步骤Succeeded且实例提交journal已完成，不能只看下载字节100%。</li>
+<li>Instance=Ready要求已提交锁文件revision的所有必需组件可解析、必需对象存在并验过；运行前仍做廉价存在/指纹检查，必要时重哈希。</li>
+<li>登录密钥永不进SQLite/lock/event/前端；account.remove同时删除凭据引用与secret，失败记录可重试清理，不显示“已完全删除”。</li>
+<li>删除实例只移走自己UUID目录；不按用户可变名称递归删除。共享assets/libraries对象由引用计数+扫描GC回收。</li>
+<li>GC先mark引用（活动任务、plan、实例、回收站/备份），再隔离候选，过24小时宽限期二次确认后删除；与下载和提交共享锁。引用计数不得单独作为唯一删除依据。</li>
+<li>DB外键开启，WAL、busy timeout、短事务；大文件I/O与网络不得在DB写事务内等待。</li>
+<li>设置保存、事件记录、revision增加同事务；写失败保留旧值，UI不能先显示永久成功。</li>
+</ul>
+<h2>7. 文件系统与DB跨介质提交</h2>
+<p>不能假设SQLite事务会回滚文件。采用journal：Prepared（目标与旧manifest）→FilesStaged（所有文件已验证）→FilesSwapped（同卷原子rename/replace，旧文件移rollback目录）→DbCommitted（更新实例revision与引用）→Finalized（写lock投影、清理旧文件）。启动恢复逐条核查journal：DB未提交时回滚或继续已验证步骤；DB已提交时补齐投影，不回退已确认revision。发生无法判断的外部改动则RepairRequired，保留两份文件供核对。</p>
+<p>跨卷迁移一律复制→校验→切换root指针→旧目录保留回退期，不将“跨卷move”当原子操作。</p>
+</section><section class="doc" id="doc-4"><h1>任务队列、下载与安装设计</h1>
+<p>FR-02/03/05/08/09/11/12 的共同执行底座。必须先实现可恢复的通用引擎，再接各资源类型。</p>
+<h2>1. 任务DAG与计划</h2>
+<figure class="diagram">
+
+<!-- Generated by graphviz version 14.1.3 (20260303.0454)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="371pt" height="566pt"
+ viewBox="0.00 0.00 371.00 566.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="diagram-2-graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 551.48)">
+<title>G</title>
+<!-- A -->
+<g id="diagram-2-node1" class="node">
+<title>A</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M315.56,-537.08C315.56,-537.08 164.67,-537.08 164.67,-537.08 158.67,-537.08 152.67,-531.08 152.67,-525.08 152.67,-525.08 152.67,-513.08 152.67,-513.08 152.67,-507.08 158.67,-501.08 164.67,-501.08 164.67,-501.08 315.56,-501.08 315.56,-501.08 321.56,-501.08 327.56,-507.08 327.56,-513.08 327.56,-513.08 327.56,-525.08 327.56,-525.08 327.56,-531.08 321.56,-537.08 315.56,-537.08"/>
+<text xml:space="preserve" text-anchor="middle" x="240.12" y="-515.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">用户选择 → 固定版本/Loader/Java</text>
+</g>
+<!-- B -->
+<g id="diagram-2-node2" class="node">
+<title>B</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M302.91,-470.08C302.91,-470.08 177.32,-470.08 177.32,-470.08 171.32,-470.08 165.32,-464.08 165.32,-458.08 165.32,-458.08 165.32,-446.08 165.32,-446.08 165.32,-440.08 171.32,-434.08 177.32,-434.08 177.32,-434.08 302.91,-434.08 302.91,-434.08 308.91,-434.08 314.91,-440.08 314.91,-446.08 314.91,-446.08 314.91,-458.08 314.91,-458.08 314.91,-464.08 308.91,-470.08 302.91,-470.08"/>
+<text xml:space="preserve" text-anchor="middle" x="240.12" y="-448.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">安装预览：空间/来源/变更摘要</text>
+</g>
+<!-- A&#45;&gt;B -->
+<g id="diagram-2-edge1" class="edge">
+<title>A&#45;&gt;B</title>
+<path fill="none" stroke="#7d88bc" d="M240.12,-500.66C240.12,-493.81 240.12,-485.82 240.12,-478.35"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="242.39,-478.56 240.12,-472.06 237.84,-478.56 242.39,-478.56"/>
+</g>
+<!-- C -->
+<g id="diagram-2-node3" class="node">
+<title>C</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M283.46,-403.08C283.46,-403.08 196.77,-403.08 196.77,-403.08 190.77,-403.08 184.77,-397.08 184.77,-391.08 184.77,-391.08 184.77,-379.08 184.77,-379.08 184.77,-373.08 190.77,-367.08 196.77,-367.08 196.77,-367.08 283.46,-367.08 283.46,-367.08 289.46,-367.08 295.46,-373.08 295.46,-379.08 295.46,-379.08 295.46,-391.08 295.46,-391.08 295.46,-397.08 289.46,-403.08 283.46,-403.08"/>
+<text xml:space="preserve" text-anchor="middle" x="240.12" y="-381.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">确认计划 + 幂等任务</text>
+</g>
+<!-- B&#45;&gt;C -->
+<g id="diagram-2-edge2" class="edge">
+<title>B&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M240.12,-433.66C240.12,-426.81 240.12,-418.82 240.12,-411.35"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="242.39,-411.56 240.12,-405.06 237.84,-411.56 242.39,-411.56"/>
+</g>
+<!-- D -->
+<g id="diagram-2-node4" class="node">
+<title>D</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M261.73,-336.08C261.73,-336.08 88.5,-336.08 88.5,-336.08 82.5,-336.08 76.5,-330.08 76.5,-324.08 76.5,-324.08 76.5,-312.08 76.5,-312.08 76.5,-306.08 82.5,-300.08 88.5,-300.08 88.5,-300.08 261.73,-300.08 261.73,-300.08 267.73,-300.08 273.73,-306.08 273.73,-312.08 273.73,-312.08 273.73,-324.08 273.73,-324.08 273.73,-330.08 267.73,-336.08 261.73,-336.08"/>
+<text xml:space="preserve" text-anchor="middle" x="175.12" y="-314.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">下载Client / Libraries / Assets / Java</text>
+</g>
+<!-- C&#45;&gt;D -->
+<g id="diagram-2-edge3" class="edge">
+<title>C&#45;&gt;D</title>
+<path fill="none" stroke="#7d88bc" d="M222.7,-366.66C215.12,-359.08 206.14,-350.1 198.03,-341.99"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="199.86,-340.6 193.65,-337.62 196.64,-343.82 199.86,-340.6"/>
+</g>
+<!-- E -->
+<g id="diagram-2-node5" class="node">
+<title>E</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M211.24,-269.08C211.24,-269.08 100.99,-269.08 100.99,-269.08 94.99,-269.08 88.99,-263.08 88.99,-257.08 88.99,-257.08 88.99,-245.08 88.99,-245.08 88.99,-239.08 94.99,-233.08 100.99,-233.08 100.99,-233.08 211.24,-233.08 211.24,-233.08 217.24,-233.08 223.24,-239.08 223.24,-245.08 223.24,-245.08 223.24,-257.08 223.24,-257.08 223.24,-263.08 217.24,-269.08 211.24,-269.08"/>
+<text xml:space="preserve" text-anchor="middle" x="156.12" y="-247.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">逐对象摘要校验 / 安全解压</text>
+</g>
+<!-- D&#45;&gt;E -->
+<g id="diagram-2-edge4" class="edge">
+<title>D&#45;&gt;E</title>
+<path fill="none" stroke="#7d88bc" d="M170.02,-299.66C167.98,-292.67 165.59,-284.47 163.36,-276.88"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="165.65,-276.6 161.65,-271 161.29,-277.88 165.65,-276.6"/>
+</g>
+<!-- X -->
+<g id="diagram-2-node9" class="node">
+<title>X</title>
+<path fill="#fff0df" stroke="#b9c3e0" d="M300.07,-113.08C300.07,-113.08 190.17,-113.08 190.17,-113.08 184.17,-113.08 178.17,-107.08 178.17,-101.08 178.17,-101.08 178.17,-79 178.17,-79 178.17,-73 184.17,-67 190.17,-67 190.17,-67 300.07,-67 300.07,-67 306.07,-67 312.07,-73 312.07,-79 312.07,-79 312.07,-101.08 312.07,-101.08 312.07,-107.08 306.07,-113.08 300.07,-113.08"/>
+<text xml:space="preserve" text-anchor="middle" x="245.12" y="-93.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">NeedsAction / 失败隔离</text>
+<text xml:space="preserve" text-anchor="middle" x="245.12" y="-79.24" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">保留缓存与旧实例</text>
+</g>
+<!-- D&#45;&gt;X -->
+<g id="diagram-2-edge8" class="edge">
+<title>D&#45;&gt;X</title>
+<path fill="none" stroke="#7d88bc" d="M204.95,-299.62C215.7,-291.72 226.74,-281.38 233.12,-269.08 257.5,-222.03 254.65,-158.36 250.08,-121.29"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="252.34,-121 249.23,-114.86 247.83,-121.6 252.34,-121"/>
+<text xml:space="preserve" text-anchor="middle" x="267.39" y="-209.08" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">网络/磁盘</text>
+</g>
+<!-- F -->
+<g id="diagram-2-node6" class="node">
+<title>F</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M138.23,-191.08C138.23,-191.08 12,-191.08 12,-191.08 6,-191.08 0,-185.08 0,-179.08 0,-179.08 0,-167.08 0,-167.08 0,-161.08 6,-155.08 12,-155.08 12,-155.08 138.23,-155.08 138.23,-155.08 144.23,-155.08 150.23,-161.08 150.23,-167.08 150.23,-167.08 150.23,-179.08 150.23,-179.08 150.23,-185.08 144.23,-191.08 138.23,-191.08"/>
+<text xml:space="preserve" text-anchor="middle" x="75.12" y="-169.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">Loader处理器 / 最终清单审计</text>
+</g>
+<!-- E&#45;&gt;F -->
+<g id="diagram-2-edge5" class="edge">
+<title>E&#45;&gt;F</title>
+<path fill="none" stroke="#7d88bc" d="M137.74,-232.83C126.42,-222.22 111.79,-208.49 99.52,-196.97"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="101.1,-195.34 94.81,-192.56 97.99,-198.66 101.1,-195.34"/>
+</g>
+<!-- E&#45;&gt;X -->
+<g id="diagram-2-edge9" class="edge">
+<title>E&#45;&gt;X</title>
+<path fill="none" stroke="#7d88bc" d="M164.46,-232.67C173.81,-213.43 189.65,-181.65 204.79,-155.08 211.41,-143.45 219.15,-130.94 226.06,-120.08"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="227.83,-121.54 229.43,-114.84 224,-119.08 227.83,-121.54"/>
+<text xml:space="preserve" text-anchor="middle" x="221.45" y="-170.08" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">hash失败</text>
+</g>
+<!-- G -->
+<g id="diagram-2-node7" class="node">
+<title>G</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M135.91,-108.04C135.91,-108.04 14.33,-108.04 14.33,-108.04 8.33,-108.04 2.33,-102.04 2.33,-96.04 2.33,-96.04 2.33,-84.04 2.33,-84.04 2.33,-78.04 8.33,-72.04 14.33,-72.04 14.33,-72.04 135.91,-72.04 135.91,-72.04 141.91,-72.04 147.91,-78.04 147.91,-84.04 147.91,-84.04 147.91,-96.04 147.91,-96.04 147.91,-102.04 141.91,-108.04 135.91,-108.04"/>
+<text xml:space="preserve" text-anchor="middle" x="75.12" y="-86.44" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">文件交换journal → DB事务</text>
+</g>
+<!-- F&#45;&gt;G -->
+<g id="diagram-2-edge6" class="edge">
+<title>F&#45;&gt;G</title>
+<path fill="none" stroke="#7d88bc" d="M75.12,-154.89C75.12,-143.69 75.12,-128.87 75.12,-116.33"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="77.39,-116.49 75.12,-109.99 72.84,-116.49 77.39,-116.49"/>
+</g>
+<!-- F&#45;&gt;X -->
+<g id="diagram-2-edge10" class="edge">
+<title>F&#45;&gt;X</title>
+<path fill="none" stroke="#7d88bc" d="M99.59,-154.64C112.45,-145.95 128.71,-135.71 144.12,-128.08 152.5,-123.93 161.48,-119.98 170.48,-116.32"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="171.1,-118.53 176.3,-114.01 169.42,-114.3 171.1,-118.53"/>
+<text xml:space="preserve" text-anchor="middle" x="159.12" y="-131.08" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">构建失败</text>
+</g>
+<!-- H -->
+<g id="diagram-2-node8" class="node">
+<title>H</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M112.24,-36C112.24,-36 37.99,-36 37.99,-36 31.99,-36 25.99,-30 25.99,-24 25.99,-24 25.99,-12 25.99,-12 25.99,-6 31.99,0 37.99,0 37.99,0 112.24,0 112.24,0 118.24,0 124.24,-6 124.24,-12 124.24,-12 124.24,-24 124.24,-24 124.24,-30 118.24,-36 112.24,-36"/>
+<text xml:space="preserve" text-anchor="middle" x="75.12" y="-14.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">实例就绪 / 可启动</text>
+</g>
+<!-- G&#45;&gt;H -->
+<g id="diagram-2-edge7" class="edge">
+<title>G&#45;&gt;H</title>
+<path fill="none" stroke="#7d88bc" d="M75.12,-71.73C75.12,-63.33 75.12,-53.09 75.12,-43.88"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="77.39,-44.13 75.12,-37.63 72.84,-44.13 77.39,-44.13"/>
+</g>
+<!-- X&#45;&gt;C -->
+<g id="diagram-2-edge11" class="edge">
+<title>X&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M273.71,-113.4C289.16,-128.15 305.12,-148.97 305.12,-172.08 305.12,-319.08 305.12,-319.08 305.12,-319.08 305.12,-336.66 293.09,-351.14 279.38,-361.94"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="278.1,-360.05 274.22,-365.74 280.8,-363.72 278.1,-360.05"/>
+<text xml:space="preserve" text-anchor="middle" x="323.87" y="-248.08" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">预检后恢复</text>
+</g>
+</g>
+</svg>
+<figcaption>下载安装流水线 · 设计示意，详细状态以正文为准</figcaption></figure><details><summary>查看原始Mermaid定义</summary><pre><code>flowchart LR
+ A[固定目录与版本JSON] --&gt; B[解析继承与平台规则]
+ B --&gt; C[磁盘/Java/权限预检]
+ C --&gt; D[获取client/libraries/assets/logging]
+ C --&gt; E[获取与展开Java]
+ C --&gt; F[获取Loader元数据或安装器]
+ D --&gt; G[逐对象校验]
+ E --&gt; H[Java探测]
+ F --&gt; I[Loader处理器/扩展]
+ G --&gt; I
+ H --&gt; I
+ I --&gt; J[最终清单审计]
+ J --&gt; K[文件提交Journal]
+ K --&gt; L[DB事务/实例Ready]
+</code></pre></details>
+<p>Task是用户可见作业（例如“安装远山生存”）；Step是可持久重试的执行节点；Artifact是跨任务共享的内容；Attempt是一次具体HTTP尝试。不要为每个asset渲染一张用户任务卡，可折叠显示子项。</p>
+<p>Plan必须固定MC版本、Loader build、Java build、原始元数据摘要、对象哈希、URL来源、需要空间、目标root与base_revision。计划默认15分钟有效；过期只要求重新预检与确认差异，不强迫重下相同内容。上游列表改变不允许改变正在执行的计划。</p>
+<p>同一scope+idempotency_key+payload摘要重复提交返回原task_id；同key不同payload返回IDEMPOTENCY_CONFLICT；同一摘要对象由单个写入者下载，其他步骤订阅共享结果。取消一个订阅者不能取消仍被其他任务引用的下载。无哈希资源只按任务隔离，不因同URL/文件名就跨任务信任。</p>
+<h2>2. 官方Minecraft解析与对象布局</h2>
+<ol>
+<li>根目录 <code>https://piston-meta.mojang.com/mc/game/version_manifest_v2.json</code> 提供latest、versions及每版本URL/sha1；保存原始字节，验证后再解析。</li>
+<li>对版本JSON验证manifest给出的sha1；解析downloads.client、libraries.downloads/artifact/classifiers、assetIndex、logging.client、arguments与javaVersion。</li>
+<li>对assetIndex验证version JSON中的sha1，展开objects；对象URL按 <code>https://resources.download.minecraft.net/&lt;hash前2位&gt;/&lt;hash&gt;</code>，文件内容验证sha1与期望大小。</li>
+<li>下载libraries必须按Windows/x64和features评估rules；natives不是每个库都下载所有OS；日志配置文件同样是需要验证的对象。</li>
+<li><code>assets</code>兼容布局按索引要求建立；旧版virtual/map_to_resources不能忽略。官方版本JSON、JAR与资源保持来源关系。来源见研究证据中的version样本与核实记录。</li>
+</ol>
+<p>本次实测目录latest为release 26.3、snapshot 26.4-snapshot-5（2026-10-22的快照）；产品运行时必须重新读取，不将这些值写为恒定“最新”。SHA1作为上游内容完整性键使用，不把它解释为数字签名或免疫供应链攻击。</p>
+<h2>3. 调度与资源预算</h2>
+<table>
+<thead>
+<tr>
+<th>资源</th>
+<th>默认/上限</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HTTP文件并发</td>
+<td>全局8（1–16）、单域4（1–8）</td>
+<td>对象跨任务公平排队；认证/目录刷新保留独立小池</td>
+</tr>
+<tr>
+<td>哈希校验</td>
+<td>2个工作任务</td>
+<td>顺序流式读；不将整个JAR装内存</td>
+</tr>
+<tr>
+<td>解压/复制</td>
+<td>每卷2，实例提交1</td>
+<td>防止大量小文件把UI与磁盘打满</td>
+</tr>
+<tr>
+<td>Java处理器</td>
+<td>全局1、实例独占</td>
+<td>受控进程；10分钟无输出提示，30分钟默认超时可延长</td>
+</tr>
+<tr>
+<td>Modrinth元数据</td>
+<td>本地目标≤60请求/分钟</td>
+<td>服务端限额头优先；不靠多token提速</td>
+</tr>
+<tr>
+<td>任务优先级</td>
+<td>用户启动修复&gt;当前安装&gt;后台预取</td>
+<td>加权轮转，后台不会永久饥饿</td>
+</tr>
+<tr>
+<td>带宽</td>
+<td>0不限速、全局令牌桶</td>
+<td>重试流量也计入；速度用5秒平滑窗口</td>
+</tr>
+</tbody></table>
+<p>只有独立对象并行，首版不做单文件多分片下载，降低Range、哈希与文件锁复杂度。小对象批量入队，DB不必为每个进度字节写事务。规划资源超过10万文件时提示并启用分页，绝不一次将所有文件推给React。</p>
+<h2>4. 下载协议</h2>
+<ul>
+<li>TLS强制验证；只允许HTTPS来源。认证域名不走内容镜像，不转发Authorization到跨域重定向。</li>
+<li>连接超时10秒、无进展读超时30秒；大文件不设过短总时限。可配置代理；不把证书失败归为超时。</li>
+<li>跟随最多5次重定向，每跳校验协议/主机/私网地址；支持上游必要CDN域，防止跳到file、localhost、内网/链路本地地址。</li>
+<li>从metadata取预期size/hash；Content-Length只是传输信息，不覆盖可信元数据。无size时允许下载但显示未知总量。解压大小另算。</li>
+<li>下载到staging里的<code>.part</code>，元数据记录已fsync/安全落盘的offset、强ETag或Last-Modified。checkpoint与文件长度不一致取安全已落盘边界，截断多余数据。</li>
+<li>恢复使用 <code>Range: bytes=&lt;offset&gt;-</code> 与合适的 <code>If-Range</code>。206必须核对Content-Range起止、总量与请求；200表示从头重下，不能追加。416先核对本地长度并全量哈希，成功才完成，否则从头；ETag或对象摘要改变时废弃旧part。</li>
+<li>HTTP压缩与Range不混用：二进制请求identity编码；如服务不支持Range则重下整个对象。</li>
+<li>完整文件流式验证元数据中最强可用摘要（mrpack优先SHA512，Java包SHA256，官方MC至少SHA1）及size。失败文件隔离，不进入缓存。</li>
+<li>校验后同卷原子rename到不可变对象路径；已有对象再次比对已验证记录，冲突隔离并报HASH_COLLISION_OR_CORRUPTION。写入者lease释放后等待者可复用。</li>
+</ul>
+<h2>5. 错误分类、退避与切源</h2>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>自动处理</th>
+<th>用户可执行操作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DNS/连接重置/读超时/HTTP408/5xx</td>
+<td>最多初次+4次，退避1/2/4/8秒加0–30%抖动</td>
+<td>重试失败项、检查代理</td>
+</tr>
+<tr>
+<td>429</td>
+<td>尊重Retry-After（秒或HTTP日期）/ratelimit reset，暂停该域队列</td>
+<td>等待倒计时、稍后继续；不立即切源刷接口</td>
+</tr>
+<tr>
+<td>401</td>
+<td>内容鉴权允许一次刷新；OAuth按认证状态机</td>
+<td>重新登录</td>
+</tr>
+<tr>
+<td>403</td>
+<td>不通用重试；区分API接入/权益/下载禁用</td>
+<td>查看具体原因、合法上游入口</td>
+</tr>
+<tr>
+<td>404/410</td>
+<td>元数据可重新解析一次；被锁定对象不能自动换版本</td>
+<td>重新生成计划、换兼容版本</td>
+</tr>
+<tr>
+<td>摘要不符</td>
+<td>当前源重试1次后可换同摘要可信源；最多3次总完整获取</td>
+<td>查看来源、重试；永不“忽略校验”</td>
+</tr>
+<tr>
+<td>证书异常</td>
+<td>不自动重试、不降级HTTP</td>
+<td>检查系统时间/代理证书链</td>
+</tr>
+<tr>
+<td>空间/写权限/文件占用</td>
+<td>停止受影响卷的写任务，保留已验缓存</td>
+<td>释放空间、解占用、重新选择目录</td>
+</tr>
+<tr>
+<td>解析schema不支持</td>
+<td>保存脱敏诊断、停止该适配器</td>
+<td>更新适配器或选择已验证版本</td>
+</tr>
+</tbody></table>
+<p>源优先级：官方→用户明确启用的镜像。候选镜像必须映射同一对象哈希；没有可信哈希时不自动跨源混用。BMCLAPI/MCIM等仅为未来可配置适配器候选，本包未核实其当前服务保证，不列为首版必需依赖。禁止从任意字符串替换官方域名推导所有下载URL。</p>
+<h2>6. 空间、暂停与取消</h2>
+<p>空间估算＝未缓存下载字节+最大展开占用+安装输出+回滚旧文件+安全余量max(1GiB,10%)，以实际目标卷分别计算。总量未知时显示“尚不能确认，至少X”，并产生SPACE_ESTIMATE_INCOMPLETE阻断项；用户可确认一个明确的每卷空间预算上限后重新预览。新版plan固定预算、余量和确认项，下载/展开超预算即NeedsAction；禁止以未知=0提交。空间不足不允许commit。过程中持续检查空间阈值，用户外部写满磁盘时停到NeedsAction。</p>
+<p>暂停：停止分配新步骤，活动HTTP可落盘checkpoint后停止；解压可在条目边界停止；文件交换提交阶段不可暂停，按钮禁用并说明“正在保存安装结果”。</p>
+<p>取消：持久cancel_requested→取消子步骤→杀死本任务受控处理器（必要时确认）→回滚未提交文件→Canceled。缓存可保留；自有staging保留24小时后清理。已提交完成后“取消”不能变成删除实例。取消不会删除用户在外部放入的未知文件。</p>
+<p>退出应用：有任务时提供“退出并保存进度 / 返回”；首版不提供后台常驻服务。由app.exit_request生成退出摘要，app.exit_confirm停止调度并等待安全停点。Committing不可强制退出，保持窗口并说明正在保存；普通步骤超过10秒进入等待/操作系统强退提示，不由应用主动退出尚未落盘事务。下次按Interrupted恢复，不误报Canceled。运行中的游戏按设置默认继续，关闭启动器时清晰提示日志跟踪可能中断。</p>
+<h2>7. Loader与Java安装</h2>
+<p>Fabric：用meta API查询game与loader兼容组合，获取固定build的profile/json；解析mainClass/libraries/arguments，继承原版资源。Fabric API是一个Mod项目，不等于Fabric Loader，按依赖计划另外安装。</p>
+<p>Forge/NeoForge：下载官方安装器与相关依赖，读取install_profile与version JSON，在独立兼容根执行已支持的client processors（含sides、变量、Maven坐标、outputs）；若采用官方安装器运行模式，必须在临时兼容根中测试其客户端参数与launcher profile要求。所有安装器都是可执行代码，普通权限运行、限定工作目录、记录脱敏输出，不能声称是安全沙箱。失败检查输出hash，回滚临时结果，不能仅复制universal JAR宣称成功。<a href="https://github.com/MinecraftForge/Installer/blob/2.0/src/main/java/net/minecraftforge/installer/actions/ClientInstall.java">Forge安装器源码</a>。</p>
+<p>Quilt：独立v3适配器，列为扩展；查询成功并不保证整个生态兼容。默认不作为新用户推荐Loader。</p>
+<p>Java：优先已探测兼容本地/托管运行时，否则查询Adoptium assets API（Windows、x64、指定major、GA、hotspot、JDK ZIP）；固定返回build、package链接、SHA256与许可证信息，校验后安全解压到托管目录，再探测实际major/arch。不使用“latest二进制跳转URL”作为唯一可追踪锁。可后续支持官方runtime组件manifest，但M2先用一个验证过的Java提供商。Mojang版本中的java-runtime-delta/epsilon是组件标识，不能当下载URL。</p>
+<h2>8. Mod与整合包变更事务</h2>
+<p>Modrinth先取兼容版本列表，再确定具体version；项目搜索匹配不等于同一版本同时满足MC与Loader。required依赖递归求解，固定version优先；project-only依赖在实例约束下选候选并记录选择。optional默认不装；incompatible阻断；embedded视作已包含，不重复下载。环用访问集合检测；普通依赖环可折叠为强连通分量统一提交，版本约束无解时报冲突链。</p>
+<p>本地识别读取fabric.mod.json、quilt.mod.json、META-INF/mods.toml、neoforge.mods.toml等有限大小条目；本地hash查Modrinth只在用户启用识别时进行，未知文件保留。不运行JAR“探测”。更新先diff→下载→验证→旧文件移回滚区→新文件替换→锁与DB提交。运行中只允许排队，退出后重新核查revision再提交。</p>
+<p>mrpack：根部唯一modrinth.index.json，formatVersion=1、game=minecraft；安全解析files/hash/env/downloads/dependencies；跳过client=unsupported，optional给勾选；应用overrides后再client-overrides，不应用server-overrides；未知必需dependency阻断。路径规范、解压限制与来源域白名单见安全文档。下载缺文件时停NeedsAction，不能把不完整整合包标Ready。<a href="https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack">mrpack规范</a>。</p>
+<p>CurseForge：识别manifest和文件project/file ID；仅用户自己的获准API key可调用，不能内置他人key。作者禁止第三方下载或downloadUrl为空时显示文件清单与官方项目入口，用户补齐后按清单hash/可得元数据核验。通用ZIP仅支持识别后的格式；未知ZIP展示目录摘要，不自行猜测并运行脚本。</p>
+<h2>9. 恢复算法与可观测性</h2>
+<p>启动时：回收过期lease→将Running/Downloading步骤改Interrupted→核对journal→扫描part安全长度→验证已完成步骤输出→基于原plan建立剩余DAG→向用户展示“发现可恢复任务”。默认自动恢复普通可信下载，可设置关闭；安装器不确定中断状态需从干净工作区重跑相关步骤。写入实例的任务必须先恢复journal，不能直接重跑所有副作用。</p>
+<p>每作业保留task_id、plan_digest、步骤耗时、来源、尝试次数、缓存命中与错误链；不记访问令牌或完整带签名URL。界面总进度由“已验证的已知总字节/字节总量”和当前阶段组成；不把构建时间塞入假百分比。下载完后显示“校验/安装中”，Ready才显示完成。</p>
+</section><section class="doc" id="doc-5"><h1>状态机与异常路径</h1>
+<p>约定：所有未列出的状态跃迁返回INVALID_TRANSITION，保持现有状态。已结束的执行尝试不可改写。Task是可重试的用户作业：Failed允许显式retry_failed创建新的TaskExecution，再回Queued；Succeeded/Canceled不能复活。重试保留旧execution与错误，且不得改变原计划。详见11文档。</p>
+<h2>1. 实例状态</h2>
+<figure class="diagram">
+
+<!-- Generated by graphviz version 14.1.3 (20260303.0454)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="462pt" height="286pt"
+ viewBox="0.00 0.00 462.00 286.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="diagram-3-graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 272.03)">
+<title>G</title>
+<!-- A -->
+<g id="diagram-3-node1" class="node">
+<title>A</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M42,-36C42,-36 12,-36 12,-36 6,-36 0,-30 0,-24 0,-24 0,-12 0,-12 0,-6 6,0 12,0 12,0 42,0 42,0 48,0 54,-6 54,-12 54,-12 54,-24 54,-24 54,-30 48,-36 42,-36"/>
+<text xml:space="preserve" text-anchor="middle" x="27" y="-14.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">草稿</text>
+</g>
+<!-- B -->
+<g id="diagram-3-node2" class="node">
+<title>B</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M127,-36C127,-36 97,-36 97,-36 91,-36 85,-30 85,-24 85,-24 85,-12 85,-12 85,-6 91,0 97,0 97,0 127,0 127,0 133,0 139,-6 139,-12 139,-12 139,-24 139,-24 139,-30 133,-36 127,-36"/>
+<text xml:space="preserve" text-anchor="middle" x="112" y="-14.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">安装中</text>
+</g>
+<!-- A&#45;&gt;B -->
+<g id="diagram-3-edge1" class="edge">
+<title>A&#45;&gt;B</title>
+<path fill="none" stroke="#7d88bc" d="M54.26,-18C61.38,-18 69.19,-18 76.67,-18"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="76.61,-20.28 83.11,-18 76.61,-15.73 76.61,-20.28"/>
+</g>
+<!-- C -->
+<g id="diagram-3-node3" class="node">
+<title>C</title>
+<path fill="#e2e6ff" stroke="#b9c3e0" d="M212,-160C212,-160 182,-160 182,-160 176,-160 170,-154 170,-148 170,-148 170,-136 170,-136 170,-130 176,-124 182,-124 182,-124 212,-124 212,-124 218,-124 224,-130 224,-136 224,-136 224,-148 224,-148 224,-154 218,-160 212,-160"/>
+<text xml:space="preserve" text-anchor="middle" x="197" y="-138.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">就绪</text>
+</g>
+<!-- B&#45;&gt;C -->
+<g id="diagram-3-edge2" class="edge">
+<title>B&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M125.25,-36.3C139.59,-57.73 163.42,-93.33 179.41,-117.22"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="177.35,-118.23 182.86,-122.37 181.14,-115.7 177.35,-118.23"/>
+</g>
+<!-- F -->
+<g id="diagram-3-node6" class="node">
+<title>F</title>
+<path fill="#fff0df" stroke="#b9c3e0" d="M421.7,-36C421.7,-36 391.7,-36 391.7,-36 385.7,-36 379.7,-30 379.7,-24 379.7,-24 379.7,-12 379.7,-12 379.7,-6 385.7,0 391.7,0 391.7,0 421.7,0 421.7,0 427.7,0 433.7,-6 433.7,-12 433.7,-12 433.7,-24 433.7,-24 433.7,-30 427.7,-36 421.7,-36"/>
+<text xml:space="preserve" text-anchor="middle" x="406.7" y="-14.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">需修复</text>
+</g>
+<!-- B&#45;&gt;F -->
+<g id="diagram-3-edge3" class="edge">
+<title>B&#45;&gt;F</title>
+<path fill="none" stroke="#7d88bc" d="M139.49,-13.47C192.71,-9.68 312.57,-9.52 371.57,-12.97"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="371.33,-15.24 377.97,-13.39 371.63,-10.7 371.33,-15.24"/>
+</g>
+<!-- D -->
+<g id="diagram-3-node4" class="node">
+<title>D</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M336.7,-210C336.7,-210 298.78,-210 298.78,-210 292.78,-210 286.78,-204 286.78,-198 286.78,-198 286.78,-186 286.78,-186 286.78,-180 292.78,-174 298.78,-174 298.78,-174 336.7,-174 336.7,-174 342.7,-174 348.7,-180 348.7,-186 348.7,-186 348.7,-198 348.7,-198 348.7,-204 342.7,-210 336.7,-210"/>
+<text xml:space="preserve" text-anchor="middle" x="317.74" y="-188.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">启动预检</text>
+</g>
+<!-- C&#45;&gt;D -->
+<g id="diagram-3-edge5" class="edge">
+<title>C&#45;&gt;D</title>
+<path fill="none" stroke="#7d88bc" d="M204.29,-160.36C210.53,-175.38 221.68,-195.61 239,-205 251.07,-211.54 265.61,-210.96 278.84,-207.84"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="279.33,-210.06 284.99,-206.14 278.12,-205.68 279.33,-210.06"/>
+</g>
+<!-- G -->
+<g id="diagram-3-node7" class="node">
+<title>G</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M332.74,-151C332.74,-151 302.74,-151 302.74,-151 296.74,-151 290.74,-145 290.74,-139 290.74,-139 290.74,-127 290.74,-127 290.74,-121 296.74,-115 302.74,-115 302.74,-115 332.74,-115 332.74,-115 338.74,-115 344.74,-121 344.74,-127 344.74,-127 344.74,-139 344.74,-139 344.74,-145 338.74,-151 332.74,-151"/>
+<text xml:space="preserve" text-anchor="middle" x="317.74" y="-129.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">更新中</text>
+</g>
+<!-- C&#45;&gt;G -->
+<g id="diagram-3-edge9" class="edge">
+<title>C&#45;&gt;G</title>
+<path fill="none" stroke="#7d88bc" d="M224.35,-142.68C238.45,-142.78 256.09,-142.49 271.78,-141 275.43,-140.65 279.24,-140.17 283.02,-139.61"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="283.14,-141.89 289.19,-138.62 282.41,-137.4 283.14,-141.89"/>
+</g>
+<!-- H -->
+<g id="diagram-3-node8" class="node">
+<title>H</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M332.74,-95C332.74,-95 302.74,-95 302.74,-95 296.74,-95 290.74,-89 290.74,-83 290.74,-83 290.74,-71 290.74,-71 290.74,-65 296.74,-59 302.74,-59 302.74,-59 332.74,-59 332.74,-59 338.74,-59 344.74,-65 344.74,-71 344.74,-71 344.74,-83 344.74,-83 344.74,-89 338.74,-95 332.74,-95"/>
+<text xml:space="preserve" text-anchor="middle" x="317.74" y="-73.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">回收站</text>
+</g>
+<!-- C&#45;&gt;H -->
+<g id="diagram-3-edge12" class="edge">
+<title>C&#45;&gt;H</title>
+<path fill="none" stroke="#7d88bc" d="M224.43,-127.09C229.27,-124.39 234.28,-121.6 239,-119 253.53,-111 269.66,-102.26 283.44,-94.84"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="284.43,-96.89 289.08,-91.81 282.28,-92.88 284.43,-96.89"/>
+</g>
+<!-- D&#45;&gt;C -->
+<g id="diagram-3-edge7" class="edge">
+<title>D&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M286.69,-179.35C269.88,-172.27 248.88,-163.43 231.54,-156.12"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="232.62,-154.11 225.75,-153.68 230.85,-158.3 232.62,-154.11"/>
+<text xml:space="preserve" text-anchor="middle" x="255.39" y="-175.95" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">取消</text>
+</g>
+<!-- E -->
+<g id="diagram-3-node5" class="node">
+<title>E</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M421.7,-253C421.7,-253 391.7,-253 391.7,-253 385.7,-253 379.7,-247 379.7,-241 379.7,-241 379.7,-229 379.7,-229 379.7,-223 385.7,-217 391.7,-217 391.7,-217 421.7,-217 421.7,-217 427.7,-217 433.7,-223 433.7,-229 433.7,-229 433.7,-241 433.7,-241 433.7,-247 427.7,-253 421.7,-253"/>
+<text xml:space="preserve" text-anchor="middle" x="406.7" y="-231.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">运行中</text>
+</g>
+<!-- D&#45;&gt;E -->
+<g id="diagram-3-edge6" class="edge">
+<title>D&#45;&gt;E</title>
+<path fill="none" stroke="#7d88bc" d="M349.15,-207.04C356.65,-210.75 364.72,-214.74 372.35,-218.51"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="371.02,-220.39 377.85,-221.23 373.03,-216.31 371.02,-220.39"/>
+</g>
+<!-- E&#45;&gt;C -->
+<g id="diagram-3-edge8" class="edge">
+<title>E&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M379.49,-240.73C344.36,-246.86 281.52,-252.25 239,-224 219.86,-211.28 209.27,-186.83 203.67,-167.92"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="205.87,-167.34 201.97,-161.67 201.48,-168.54 205.87,-167.34"/>
+<text xml:space="preserve" text-anchor="middle" x="317.74" y="-248.63" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">退出</text>
+</g>
+<!-- F&#45;&gt;B -->
+<g id="diagram-3-edge4" class="edge">
+<title>F&#45;&gt;B</title>
+<path fill="none" stroke="#7d88bc" d="M379.48,-22.51C326.48,-26.31 206.64,-26.49 147.43,-23.04"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="147.63,-20.78 141,-22.63 147.34,-25.32 147.63,-20.78"/>
+</g>
+<!-- G&#45;&gt;C -->
+<g id="diagram-3-edge10" class="edge">
+<title>G&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M290.3,-127.03C275.18,-124.51 255.91,-122.82 239,-126 236.6,-126.45 234.15,-127.04 231.72,-127.73"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="231.43,-125.43 225.93,-129.57 232.81,-129.77 231.43,-125.43"/>
+<text xml:space="preserve" text-anchor="middle" x="255.39" y="-129" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">成功/回滚</text>
+</g>
+<!-- G&#45;&gt;F -->
+<g id="diagram-3-edge11" class="edge">
+<title>G&#45;&gt;F</title>
+<path fill="none" stroke="#7d88bc" d="M339.7,-114.64C342.84,-111.54 345.95,-108.27 348.7,-105 365.12,-85.49 380.77,-61.02 391.51,-43.01"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="393.41,-44.26 394.74,-37.51 389.49,-41.95 393.41,-44.26"/>
+</g>
+<!-- H&#45;&gt;C -->
+<g id="diagram-3-edge13" class="edge">
+<title>H&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M290.6,-74.5C274.68,-74.18 254.5,-76.03 239,-85 226.39,-92.3 216.62,-105.21 209.78,-116.9"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="207.97,-115.48 206.83,-122.27 211.95,-117.67 207.97,-115.48"/>
+<text xml:space="preserve" text-anchor="middle" x="255.39" y="-88" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">恢复审计</text>
+</g>
+</g>
+</svg>
+<figcaption>实例生命周期 · 设计示意，详细状态以正文为准</figcaption></figure><details><summary>查看原始Mermaid定义</summary><pre><code>stateDiagram-v2
+ [*] --&gt; Draft
+ Draft --&gt; Installing: commit计划
+ Installing --&gt; Ready: journal与DB完成
+ Installing --&gt; RepairRequired: 不可恢复安装失败
+ Installing --&gt; Draft: 取消且未提交
+ Ready --&gt; Preparing: 启动预检
+ Preparing --&gt; Ready: 取消或可恢复预检失败
+ Preparing --&gt; Running: 进程创建确认
+ Running --&gt; Ready: 正常退出
+ Running --&gt; RepairRequired: 证实必需文件损坏
+ Ready --&gt; Updating: 提交组件变更
+ Updating --&gt; Ready: 成功或回滚成功
+ Updating --&gt; RepairRequired: 回滚无法完成
+ RepairRequired --&gt; Installing: 修复计划
+ Draft --&gt; Trashed: 删除确认
+ Ready --&gt; Trashed: 删除确认
+ RepairRequired --&gt; Trashed: 删除确认
+ Trashed --&gt; Ready: 恢复且审计通过
+ Trashed --&gt; RepairRequired: 恢复但文件不完整
+ Trashed --&gt; [*]: 清理回收站
+</code></pre></details>
+<p>普通游戏崩溃不必把实例改RepairRequired，只有文件/组件完整性证据才触发。运行态由RunSession派生，DB保留恢复记录。更新/删除/迁移遇到Running均返回INSTANCE_BUSY。崩溃后旧pid不证明游戏仍在，必须比对process_creation_time、可执行路径与会话关联，无法确认时标“进程状态未知”，提示用户核对，不杀无关进程。</p>
+<h2>2. 作业状态与控制语义</h2>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>进入条件</th>
+<th>可接受动作</th>
+<th>后续</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Planned（Plan状态，非Task枚举）</td>
+<td>计划已生成未提交</td>
+<td>commit、丢弃</td>
+<td>创建Queued任务</td>
+</tr>
+<tr>
+<td>Queued</td>
+<td>任务已持久化待资源</td>
+<td>pause、cancel</td>
+<td>Running/Paused/Canceling</td>
+</tr>
+<tr>
+<td>Running</td>
+<td>下载/可并行步骤开始</td>
+<td>pause、cancel（可中断阶段）</td>
+<td>Pausing/Retrying/Verifying/NeedsAction/Failed</td>
+</tr>
+<tr>
+<td>Pausing</td>
+<td>已请求暂停</td>
+<td>cancel</td>
+<td>已checkpoint后Paused</td>
+</tr>
+<tr>
+<td>Paused</td>
+<td>安全停点</td>
+<td>resume、cancel</td>
+<td>Queued/Canceling</td>
+</tr>
+<tr>
+<td>Retrying</td>
+<td>短暂错误等待not_before</td>
+<td>pause、cancel、查看倒计时</td>
+<td>Queued</td>
+</tr>
+<tr>
+<td>Verifying</td>
+<td>所需下载结束，审计中</td>
+<td>cancel（审计可停点）</td>
+<td>Installing/Committing/NeedsAction/Failed</td>
+</tr>
+<tr>
+<td>Installing</td>
+<td>解压/Java/处理器</td>
+<td>可停点pause、cancel</td>
+<td>Pausing/Committing/NeedsAction/Failed</td>
+</tr>
+<tr>
+<td>Committing</td>
+<td>交换文件与DB提交</td>
+<td>仅查看</td>
+<td>Succeeded或恢复流程；禁止中途强制暂停</td>
+</tr>
+<tr>
+<td>NeedsAction</td>
+<td>空间、登录、手动文件等阻塞</td>
+<td>执行明确操作、cancel</td>
+<td>重新预检后Queued</td>
+</tr>
+<tr>
+<td>Interrupted</td>
+<td>上次进程非正常结束</td>
+<td>recover、cancel</td>
+<td>先审计journal，再Queued/NeedsAction</td>
+</tr>
+<tr>
+<td>Canceling</td>
+<td>取消标志持久化</td>
+<td>查看</td>
+<td>回滚结束后Canceled；回滚失败NeedsAction</td>
+</tr>
+<tr>
+<td>Succeeded</td>
+<td>所有必需步骤与提交成功</td>
+<td>打开实例、查看记录</td>
+<td>保持终态</td>
+</tr>
+<tr>
+<td>Failed</td>
+<td>重试已尽或不可自动恢复</td>
+<td>retry_failed、查看详情、清理</td>
+<td>产生新attempt后Queued，保留旧错误</td>
+</tr>
+<tr>
+<td>Canceled</td>
+<td>安全取消完成</td>
+<td>重新生成计划</td>
+<td>不复活同一取消尝试</td>
+</tr>
+</tbody></table>
+<p>步骤状态：Pending→Leased→Executing→Succeeded；异常可转RetryWait/Failed/Interrupted/Canceled。lease只保证单写，不保证副作用“恰好一次”，幂等检查与提交journal仍不可省略。</p>
+<h2>3. 登录状态与流程</h2>
+<figure class="diagram">
+
+<!-- Generated by graphviz version 14.1.3 (20260303.0454)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="379pt" height="442pt"
+ viewBox="0.00 0.00 379.00 442.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="diagram-4-graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 427.56)">
+<title>G</title>
+<!-- A -->
+<g id="diagram-4-node1" class="node">
+<title>A</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M336.3,-413.16C336.3,-413.16 226.95,-413.16 226.95,-413.16 220.95,-413.16 214.95,-407.16 214.95,-401.16 214.95,-401.16 214.95,-379.08 214.95,-379.08 214.95,-373.08 220.95,-367.08 226.95,-367.08 226.95,-367.08 336.3,-367.08 336.3,-367.08 342.3,-367.08 348.3,-373.08 348.3,-379.08 348.3,-379.08 348.3,-401.16 348.3,-401.16 348.3,-407.16 342.3,-413.16 336.3,-413.16"/>
+<text xml:space="preserve" text-anchor="middle" x="281.63" y="-393.72" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">系统浏览器</text>
+<text xml:space="preserve" text-anchor="middle" x="281.63" y="-379.32" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">OAuth + PKCE / state</text>
+</g>
+<!-- B -->
+<g id="diagram-4-node2" class="node">
+<title>B</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M271.76,-336.08C271.76,-336.08 201.5,-336.08 201.5,-336.08 195.5,-336.08 189.5,-330.08 189.5,-324.08 189.5,-324.08 189.5,-312.08 189.5,-312.08 189.5,-306.08 195.5,-300.08 201.5,-300.08 201.5,-300.08 271.76,-300.08 271.76,-300.08 277.76,-300.08 283.76,-306.08 283.76,-312.08 283.76,-312.08 283.76,-324.08 283.76,-324.08 283.76,-330.08 277.76,-336.08 271.76,-336.08"/>
+<text xml:space="preserve" text-anchor="middle" x="236.63" y="-314.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">XBL → XSTS</text>
+</g>
+<!-- A&#45;&gt;B -->
+<g id="diagram-4-edge1" class="edge">
+<title>A&#45;&gt;B</title>
+<path fill="none" stroke="#7d88bc" d="M267.39,-366.96C262.4,-359.19 256.78,-350.45 251.72,-342.58"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="253.88,-341.73 248.45,-337.49 250.05,-344.19 253.88,-341.73"/>
+</g>
+<!-- C -->
+<g id="diagram-4-node3" class="node">
+<title>C</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M269.07,-269.08C269.07,-269.08 172.18,-269.08 172.18,-269.08 166.18,-269.08 160.18,-263.08 160.18,-257.08 160.18,-257.08 160.18,-245.08 160.18,-245.08 160.18,-239.08 166.18,-233.08 172.18,-233.08 172.18,-233.08 269.07,-233.08 269.07,-233.08 275.07,-233.08 281.07,-239.08 281.07,-245.08 281.07,-245.08 281.07,-257.08 281.07,-257.08 281.07,-263.08 275.07,-269.08 269.07,-269.08"/>
+<text xml:space="preserve" text-anchor="middle" x="220.63" y="-247.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">Minecraft token交换</text>
+</g>
+<!-- B&#45;&gt;C -->
+<g id="diagram-4-edge2" class="edge">
+<title>B&#45;&gt;C</title>
+<path fill="none" stroke="#7d88bc" d="M232.34,-299.66C230.62,-292.67 228.6,-284.47 226.73,-276.88"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="229.05,-276.78 225.29,-271.02 224.63,-277.87 229.05,-276.78"/>
+</g>
+<!-- D -->
+<g id="diagram-4-node4" class="node">
+<title>D</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M177.25,-191.08C177.25,-191.08 64.01,-191.08 64.01,-191.08 58.01,-191.08 52.01,-185.08 52.01,-179.08 52.01,-179.08 52.01,-167.08 52.01,-167.08 52.01,-161.08 58.01,-155.08 64.01,-155.08 64.01,-155.08 177.25,-155.08 177.25,-155.08 183.25,-155.08 189.25,-161.08 189.25,-167.08 189.25,-167.08 189.25,-179.08 189.25,-179.08 189.25,-185.08 183.25,-191.08 177.25,-191.08"/>
+<text xml:space="preserve" text-anchor="middle" x="120.63" y="-169.48" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">分别核验访问权与Java档案</text>
+</g>
+<!-- C&#45;&gt;D -->
+<g id="diagram-4-edge3" class="edge">
+<title>C&#45;&gt;D</title>
+<path fill="none" stroke="#7d88bc" d="M197.94,-232.83C183.72,-222.03 165.25,-207.99 149.93,-196.35"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="151.33,-194.56 144.78,-192.44 148.58,-198.18 151.33,-194.56"/>
+</g>
+<!-- X -->
+<g id="diagram-4-node7" class="node">
+<title>X</title>
+<path fill="#fff0df" stroke="#b9c3e0" d="M278.09,-124.08C278.09,-124.08 157.17,-124.08 157.17,-124.08 151.17,-124.08 145.17,-118.08 145.17,-112.08 145.17,-112.08 145.17,-90 145.17,-90 145.17,-84 151.17,-78 157.17,-78 157.17,-78 278.09,-78 278.09,-78 284.09,-78 290.09,-84 290.09,-90 290.09,-90 290.09,-112.08 290.09,-112.08 290.09,-118.08 284.09,-124.08 278.09,-124.08"/>
+<text xml:space="preserve" text-anchor="middle" x="217.63" y="-104.64" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">无权益 / 未建档案 / API受限</text>
+<text xml:space="preserve" text-anchor="middle" x="217.63" y="-90.24" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">各自解释，不离线绕过</text>
+</g>
+<!-- C&#45;&gt;X -->
+<g id="diagram-4-edge6" class="edge">
+<title>C&#45;&gt;X</title>
+<path fill="none" stroke="#7d88bc" d="M220.28,-232.81C219.78,-208.16 218.85,-162.54 218.24,-132.24"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="220.52,-132.47 218.11,-126.02 215.97,-132.56 220.52,-132.47"/>
+</g>
+<!-- E -->
+<g id="diagram-4-node5" class="node">
+<title>E</title>
+<path fill="#e2e6ff" stroke="#b9c3e0" d="M113.25,-119.04C113.25,-119.04 12,-119.04 12,-119.04 6,-119.04 0,-113.04 0,-107.04 0,-107.04 0,-95.04 0,-95.04 0,-89.04 6,-83.04 12,-83.04 12,-83.04 113.25,-83.04 113.25,-83.04 119.25,-83.04 125.25,-89.04 125.25,-95.04 125.25,-95.04 125.25,-107.04 125.25,-107.04 125.25,-113.04 119.25,-119.04 113.25,-119.04"/>
+<text xml:space="preserve" text-anchor="middle" x="62.63" y="-97.44" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">账号就绪 / 内存启动凭证</text>
+</g>
+<!-- D&#45;&gt;E -->
+<g id="diagram-4-edge4" class="edge">
+<title>D&#45;&gt;E</title>
+<path fill="none" stroke="#7d88bc" d="M106.29,-154.77C98.92,-145.86 89.82,-134.88 81.85,-125.25"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="83.66,-123.88 77.76,-120.32 80.16,-126.78 83.66,-123.88"/>
+</g>
+<!-- D&#45;&gt;X -->
+<g id="diagram-4-edge5" class="edge">
+<title>D&#45;&gt;X</title>
+<path fill="none" stroke="#7d88bc" d="M144.6,-154.77C155.4,-146.97 168.4,-137.59 180.42,-128.91"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="181.43,-130.98 185.37,-125.33 178.77,-127.29 181.43,-130.98"/>
+</g>
+<!-- F -->
+<g id="diagram-4-node6" class="node">
+<title>F</title>
+<path fill="#eef0fc" stroke="#b9c3e0" d="M140.59,-36C140.59,-36 56.67,-36 56.67,-36 50.67,-36 44.67,-30 44.67,-24 44.67,-24 44.67,-12 44.67,-12 44.67,-6 50.67,0 56.67,0 56.67,0 140.59,0 140.59,0 146.59,0 152.59,-6 152.59,-12 152.59,-12 152.59,-24 152.59,-24 152.59,-30 146.59,-36 140.59,-36"/>
+<text xml:space="preserve" text-anchor="middle" x="98.63" y="-14.4" font-family="Microsoft YaHei UI" font-size="12.00" fill="#20232b">刷新 / singleflight</text>
+</g>
+<!-- E&#45;&gt;F -->
+<g id="diagram-4-edge7" class="edge">
+<title>E&#45;&gt;F</title>
+<path fill="none" stroke="#7d88bc" d="M66.62,-82.8C69.15,-73.19 72.86,-61.16 77.63,-51 78.86,-48.38 80.28,-45.72 81.78,-43.12"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="83.65,-44.43 85.12,-37.71 79.78,-42.04 83.65,-44.43"/>
+</g>
+<!-- F&#45;&gt;A -->
+<g id="diagram-4-edge9" class="edge">
+<title>F&#45;&gt;A</title>
+<path fill="none" stroke="#7d88bc" d="M152.93,-27.74C218.66,-39.88 320.63,-64.45 320.63,-100.04 320.63,-319.08 320.63,-319.08 320.63,-319.08 320.63,-333.88 313.9,-348.46 306.04,-360.46"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="304.3,-358.97 302.45,-365.6 308.03,-361.57 304.3,-358.97"/>
+<text xml:space="preserve" text-anchor="middle" x="335.63" y="-209.08" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">需要重登</text>
+</g>
+<!-- F&#45;&gt;E -->
+<g id="diagram-4-edge8" class="edge">
+<title>F&#45;&gt;E</title>
+<path fill="none" stroke="#7d88bc" d="M90.88,-36.44C85.78,-47.92 79.04,-63.09 73.42,-75.74"/>
+<polygon fill="#7d88bc" stroke="#7d88bc" points="71.44,-74.61 70.88,-81.47 75.59,-76.45 71.44,-74.61"/>
+<text xml:space="preserve" text-anchor="middle" x="91.35" y="-54" font-family="Microsoft YaHei UI" font-size="10.00" fill="#626875">成功</text>
+</g>
+</g>
+</svg>
+<figcaption>账号与授权 · 设计示意，详细状态以正文为准</figcaption></figure><details><summary>查看原始Mermaid定义</summary><pre><code>stateDiagram-v2
+ [*] --&gt; SignedOut
+ SignedOut --&gt; Authorizing: 用户登录
+ Authorizing --&gt; Exchanging: state与PKCE校验通过
+ Authorizing --&gt; SignedOut: 拒绝/取消/超时
+ Exchanging --&gt; XboxAuth: OAuth成功
+ XboxAuth --&gt; MinecraftAuth: XBL与XSTS成功
+ MinecraftAuth --&gt; CheckingAccess: Minecraft token成功
+ CheckingAccess --&gt; Ready: 权益与profile有效
+ CheckingAccess --&gt; NoEntitlement: 无有效访问权
+ CheckingAccess --&gt; ProfileMissing: 未建Java档案
+ MinecraftAuth --&gt; ApiRestricted: 明确接入受限
+ Ready --&gt; Refreshing: 临近到期或401
+ Refreshing --&gt; Ready: 刷新并复核成功
+ Refreshing --&gt; NeedsLogin: invalid_grant/撤销
+ Ready --&gt; OfflineEligible: 网络失败且已有验证记录
+ OfflineEligible --&gt; Refreshing: 网络恢复并启动前复核
+ NeedsLogin --&gt; Authorizing: 用户重新登录
+ Ready --&gt; SignedOut: 移除账号
+</code></pre></details>
+<p>默认系统浏览器Authorization Code+PKCE(S256)，state随机且一次性，OAuth在Rust端进行；仅绑定127.0.0.1的短期loopback端口，回调path/Host/nonce/state严格验证，使用已注册redirect URI。public client无client_secret，<code>consumers</code>与XboxLive.signin/offline_access等scope的实际可用组合在M0验证，不能复制Graph示例就认为Minecraft登录成功。</p>
+<p>备用device code只在自有应用允许该grant且联调通过后启用。轮询遵循interval、slow_down、expires_in；取消终止轮询并擦除会话。不要收集用户密码或把验证码当账号永久标识。<a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow">Microsoft PKCE</a>、<a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code">Device flow</a>。</p>
+<p>Xbox/Minecraft交换：Microsoft OAuth→XBL user token→XSTS（Minecraft relying party）→Minecraft login_with_xbox→entitlements与profile。其Minecraft专用链路并非本包声称有完整官方公开保证的接口，必须以应用注册权限和成熟客户端源码/联调为准；端点详见研究附录。entitlements空、Game Pass、profile404、token有效这些状态必须分开，不由单个HTTP200判断拥有游戏。</p>
+<p>单账号refresh singleflight，提前5分钟刷新并保留60秒时钟偏差；invalid_grant转NeedsLogin，不死循环刷新。refresh token轮换成功先安全保存新token再更新引用；保存失败保留明确错误，不声称登录可跨重启保持。</p>
+<h2>4. 启动状态</h2>
+<p>Idle→Preflight→RepairPlan?→RefreshingAuth→Resolving→PreparingNatives→Spawning→Running→Exited/Failed。首版“Running”仅表示受控进程创建且持续存活，不等同于“已进世界”；“启动成功”验收仍需观察游戏主菜单。可检测窗口/已知日志作为辅助信号，不硬编码跨版本日志句子作为唯一成功标准。</p>
+<p>Preflight到Spawning前可取消；Spawning存在竞态：取消后若进程已创建，转“正在停止本次启动”并只作用于本次run。不能让UI回Ready而Java继续不可见运行。进程退出码0显示正常结束，非0或异常中止提示诊断；缺失日志显示“无法读取日志”，不能编造崩溃原因。</p>
+<p>启动前缺文件：产生修复预览→用户确认→任务完成再启动。后台不静默下载大体积文件；允许用户在设置启用“小型依赖自动修复”，默认关闭。</p>
+<h2>5. 典型异常的端到端处理</h2>
+<table>
+<thead>
+<tr>
+<th>场景/错误码</th>
+<th>系统处理</th>
+<th>页面与恢复</th>
+<th>验收依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>双击安装 / DUPLICATE_REQUEST</td>
+<td>同idempotency_key返回同task</td>
+<td>按钮立即pending，任务卡只一张</td>
+<td>AC-06</td>
+</tr>
+<tr>
+<td>目录API离线 / CATALOG_STALE</td>
+<td>读缓存，标更新时间</td>
+<td>顶部“目录暂时无法更新”；缓存版本可规划，有缺失网络文件则排队等待</td>
+<td>AC-02</td>
+</tr>
+<tr>
+<td>元数据hash错 / METADATA_HASH_MISMATCH</td>
+<td>拒绝解析执行，换可信来源再取</td>
+<td>安装页错误条，不显示猜测版本</td>
+<td>AC-04</td>
+</tr>
+<tr>
+<td>服务器忽略Range / RANGE_IGNORED</td>
+<td>截断旧part，从0获取</td>
+<td>显示“来源不支持续传，重新下载该文件”</td>
+<td>AC-05</td>
+</tr>
+<tr>
+<td>存盘不足 / DISK_SPACE_LOW</td>
+<td>停写、保留缓存、NeedsAction</td>
+<td>显示所需释放空间/受影响卷</td>
+<td>AC-07</td>
+</tr>
+<tr>
+<td>校验失败 / HASH_MISMATCH</td>
+<td>隔离、有限重试、永不提交</td>
+<td>任务显示来源与文件，可重试失败项</td>
+<td>AC-04</td>
+</tr>
+<tr>
+<td>安装器退出非0 / PROCESSOR_FAILED</td>
+<td>收集脱敏日志，回滚工作区</td>
+<td>下载页“构建组件失败”，旧实例仍可用</td>
+<td>AC-12</td>
+</tr>
+<tr>
+<td>Java不兼容 / JAVA_CONSTRAINT_CONFLICT</td>
+<td>求交无解阻断启动</td>
+<td>实例页提供“匹配Java / 更换组件”</td>
+<td>AC-10</td>
+</tr>
+<tr>
+<td>API403 / AUTH_API_RESTRICTED</td>
+<td>不离线绕过、不泛化为未购买</td>
+<td>账号页说明应用接入待核实；保留已安装文件</td>
+<td>AC-14</td>
+</tr>
+<tr>
+<td>无权益 / ACCOUNT_NO_ACCESS</td>
+<td>不进入在线Ready</td>
+<td>官方购买/订阅状态入口，允许换账号</td>
+<td>AC-14</td>
+</tr>
+<tr>
+<td>无Java档案 / ACCOUNT_PROFILE_MISSING</td>
+<td>保留登录摘要，阻断完整启动</td>
+<td>打开官方档案建立页面后重新检查</td>
+<td>AC-14</td>
+</tr>
+<tr>
+<td>登录过期 / AUTH_REAUTH_REQUIRED</td>
+<td>一次刷新失败转NeedsLogin</td>
+<td>全局提示，相关启动停住，下载可继续</td>
+<td>AC-13</td>
+</tr>
+<tr>
+<td>Mod无共同兼容版本 / CONTENT_NO_COMPATIBLE_VERSION</td>
+<td>拒绝提交</td>
+<td>展示MC/Loader/依赖冲突链</td>
+<td>AC-16</td>
+</tr>
+<tr>
+<td>外部改了Mod / INSTANCE_EXTERNAL_CHANGE</td>
+<td>刷新索引并提升revision</td>
+<td>保留用户文件，要求重新预览</td>
+<td>AC-17</td>
+</tr>
+<tr>
+<td>恶意ZIP / ARCHIVE_PATH_ESCAPE</td>
+<td>写入前拒绝整个计划</td>
+<td>导入错误，实例根外无文件产生</td>
+<td>AC-21</td>
+</tr>
+<tr>
+<td>应用崩溃在文件交换中 / COMMIT_INTERRUPTED</td>
+<td>启动先恢复journal</td>
+<td>恢复页显示继续/回滚结果，未审计不Ready</td>
+<td>AC-08</td>
+</tr>
+<tr>
+<td>迁移中目标盘拔出 / ROOT_UNAVAILABLE</td>
+<td>停止该卷任务，不改源根</td>
+<td>重新接入后按卷ID恢复，不按同盘符猜</td>
+<td>AC-23</td>
+</tr>
+<tr>
+<td>配置新schema / SCHEMA_TOO_NEW</td>
+<td>只读启动，禁止旧程序写</td>
+<td>提示使用兼容版本，提供备份路径</td>
+<td>AC-24</td>
+</tr>
+</tbody></table>
+<h2>6. 离线与服务降级</h2>
+<p>离线浏览：实例、已安装内容、日志、设置可用；搜索在线内容禁用并提供重试。曾成功在线验证的账号记录只作为受限离线使用资格，不当作永久授权证明；显式退出登录/移除凭据/明确无权益使资格失效。首次登录、API受限、账号明确被撤销不能自动进入离线模式。</p>
+<p>本地离线启动不提供新的自定义身份、不修改UUID、不通过authlib替换绕过认证，也不承诺多人服务器可用。若目标游戏不能用该路径安全运行，则展示“当前版本不支持离线启动”，保留浏览/管理。是否允许过期Minecraft token参与本地运行须在M3固定版本验证后落实，未验证前不开放该按钮。</p>
+</section><section class="doc" id="doc-6"><h1>安全、隐私、备份与迁移</h1>
+<p>本节定义与实际功能相关的保护措施；无对外分发服务、不设计云账号后台。个人使用仍需保护本机存档、凭据和其他程序。</p>
+<h2>1. 威胁与控制</h2>
+<table>
+<thead>
+<tr>
+<th>输入/边界</th>
+<th>风险</th>
+<th>必须控制</th>
+<th>验证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>远程内容描述/HTML/图标</td>
+<td>XSS、IPC滥用、追踪</td>
+<td>清理后受限渲染；禁script/iframe/事件属性；图片经Rust受限缓存；无远程WebView权限</td>
+<td>HTML恶意fixture、远程导航探测</td>
+</tr>
+<tr>
+<td>任意路径/ZIP/Maven坐标</td>
+<td>越界写、覆盖其他文件</td>
+<td>Rust端根授权、规范化、拒绝绝对/UNC/设备/ADS/..、检查重解析点</td>
+<td>路径矩阵与解压fixture</td>
+</tr>
+<tr>
+<td>镜像/重定向</td>
+<td>内容替换、凭据外传</td>
+<td>HTTPS、每跳白名单、可信hash、跨域移除认证头</td>
+<td>本地测试HTTP夹具</td>
+</tr>
+<tr>
+<td>OAuth回调/设备码</td>
+<td>CSRF、回调劫持、令牌泄露</td>
+<td>PKCE、state、一次性会话、短期loopback、日志脱敏</td>
+<td>错state/replay/取消/超时测试</td>
+</tr>
+<tr>
+<td>Loader/Mod/Java</td>
+<td>可执行不可信代码</td>
+<td>来源与摘要可审查、普通权限、禁止自动执行压缩包脚本</td>
+<td>安装预览与进程参数审计</td>
+</tr>
+<tr>
+<td>清理/删除/迁移</td>
+<td>存档丢失</td>
+<td>先备份/回收、引用审计、源只读、独占锁</td>
+<td>故障注入与恢复</td>
+</tr>
+<tr>
+<td>进程管理</td>
+<td>误杀其他Java</td>
+<td>run绑定pid+creation_time+路径；只操作自己会话</td>
+<td>PID复用/启动器重启用例</td>
+</tr>
+</tbody></table>
+<p>不把“普通权限运行Java”描述成沙箱：Mod和安装器仍可访问当前用户有权访问的文件。用户在确认安装前能看到上游项目、版本和来源；不引入假安全评分。</p>
+<h2>2. 路径与压缩包规范</h2>
+<p>对Windows不区分大小写与末尾点/空格的等价路径做冲突检测；拒绝NUL、控制字符、绝对盘符、UNC、<code>\\?\</code>/<code>\\.\</code>、冒号ADS、保留设备名(CON/PRN/AUX/NUL/COM1…/LPT1…)、路径段<code>..</code>和以斜杠开头的条目。反斜杠先按分隔符解析，不能只过滤<code>../</code>。Maven坐标的每一段只能落在约定目录，不接受URL当坐标路径。</p>
+<p>写前验证目标在授权root内；不存在的目标逐级验证已存在父目录与reparse属性，创建/打开时防止跟随可疑重解析点，并在关键提交前重新校验。单次canonicalize不足以防止检查后替换。首版导入压缩包拒绝symlink/hardlink/reparse条目，拒绝重复及大小写冲突目标；普通用户自己选定root可记录稳定真实路径，但子路径仍逐级验证。</p>
+<p>解压设计上限：单包10万条目、单条8GiB、总展开40GiB、压缩比&gt;200时NeedsAction而非继续；这些是可调产品防护默认值，合法大包可在看见空间与来源后明确放宽。执行时流式统计真实展开量，不能只信ZIP头。清单JSON≤16MiB、版本JSON≤8MiB、Mod内元数据≤2MiB，超过限额报明确错误。所有路径在创建任何输出前完成静态预审。</p>
+<h2>3. 凭据与认证边界</h2>
+<p>v1选Windows DPAPI用户范围加密的本地secret文件作为CredentialPort；文件只在配置根secrets下，使用当前用户ACL与原子替换。每个secret用随机引用ID，DB只记录引用，禁止把密文发送前端。M0验证加密、轮换、写失败、删除失败与跨用户不可解密；若更换实现必须提交ADR。refresh token与代理/API key只以原生受保护secret保存；SQLite只存credential_ref。Minecraft/Xbox短期token只驻留Rust内存，必要时最小化保存策略另作ADR；不返回React、不放localStorage、不写启动脚本、不允许“一键复制完整启动命令”泄漏token。</p>
+<p>游戏启动参数中的access token对同用户进程可能可见，这是Java客户端启动链路的残余限制；使用参数数组和日志脱敏不能使它对本机恶意软件保密。产品不要求管理员权限，不关闭证书校验，不收集Microsoft密码，不借用PCL/Prism等启动器client ID。上游应用接入受限时诚实阻断相应在线功能。</p>
+<p>认证请求与资源请求分隔HTTP client配置；凭据仅发到允许的认证目标；重定向不传secret。调试模式也不打印Authorization、Cookie、XSTS、refresh/access token、device_code、授权code或PKCE verifier。客户端ID可以出现在设置诊断中，因为它不是secret。</p>
+<h2>4. 日志、隐私与保留</h2>
+<p>默认全部本地，无遥测、崩溃自动上传或AI自动发送。应用日志轮转：单文件10MiB、最多5份；运行日志默认保留30天/总量500MiB，清理只作用于launcher管理的副本，崩溃报告与用户导出单独保留。任务详细记录默认30天，摘要保留180天，可清空。</p>
+<p>脱敏流水线：先按结构字段遮蔽secret→正则识别常见token/UUID/邮箱/IP/用户路径→替换为稳定占位符→用户预览。游戏日志可能含聊天/服务器地址，自动脱敏不能保证全部识别，因此导出前显示范围并允许删除行；不宣称“绝对匿名”。导出为本地ZIP，包含版本/Java/Loader/错误链与脱敏日志，不含完整存档、账号数据库或原始凭据。</p>
+<p>未来AI入口：先本地摘要、明确提供商/发送内容/成本、逐次确认发送；结果标记为建议，不自动执行命令、删除Mod或上传更多文件。M7不得更改核心登录/下载策略。</p>
+<h2>5. PCL/.minecraft迁入</h2>
+<ol>
+<li>用户选择目录产生root令牌，后台只读扫描versions、各版本JSON、PCL/官方常见隔离目录、mods/config/saves/resourcepacks/shaderpacks/screenshots。</li>
+<li>根据真实路径与文件结构辨认“共享gameDir/按版本隔离”，不只看PCL配置标记。共享saves与mods可能属于多个版本，展示归属不确定项让用户选择复制范围。</li>
+<li>导入预览包括：实例名、MC与Loader、源gameDir、待复制大小、共享/未知内容、需要重新下载的依赖、不可迁移的认证。发现重复文件按hash去重；未知外部启动脚本仅列出，不执行。</li>
+<li>默认完整复制用户可变内容；可选择不复制screenshots/logs，大型saves默认保留且告知空间。版本与依赖可引用已验缓存，但不以“导入成功”替代校验。</li>
+<li>写入新UUID目录和journal；校验每个复制文件的大小+hash，源文件在扫描后修改则重新计算预览，不能边游戏运行边迁移存档。</li>
+<li>重新登录；Java路径重新探测。源PCL配置不直接覆盖设置；不导入PCL账号、注册表、明文token、自定义可执行主页。</li>
+<li>首次启动通过后展示成功与源目录位置；绝不自动清理源目录。迁移失败删除/回收仅限本次新建目标，源保持完整。</li>
+</ol>
+<p>v1不支持原地接管为默认模式；后续如增加“外部实例关联”，必须有独立ADR和双启动器竞争写入检测。</p>
+<h2>6. 应用升级与schema迁移</h2>
+<p>DB与文件格式均有schema_version。迁移开始前关闭写队列、检查空闲空间、SQLite在线备份并验证能打开、记录MigrationRecord。纯DB迁移单事务；文件布局迁移使用journal和可恢复复制，不能用一次性启动脚本递归改用户目录。</p>
+<p>迁移失败自动保持旧DB备份与旧数据，进入只读恢复页；只在新schema已验证后切换指针。旧程序遇到更高schema拒绝写入。降级只允许使用对应备份，不能把新字段删掉装作兼容。备份建议保留最近3次schema迁移及7天内用户显式备份，删除前检查回退依赖。</p>
+<p>全局数据根迁移：冻结写入/要求游戏退出→空间和卷ID检查→复制与hash验证→原子切换DB root记录→重建投影→验证一次启动→旧根保留至少7天，用户明确清理。失败回旧指针。缓存可重建，saves/config不可通过“修复下载”恢复。</p>
+<h2>7. 备份恢复与灾难恢复</h2>
+<p>备份分三种：配置/DB备份、实例配置+Mod清单备份、完整实例含存档快照。创建存档快照必须游戏退出；不承诺运行时一致备份。快照带完整文件清单和sha256、schema、创建时间、来源实例revision；v1恢复先预览差异并固定为新实例，不提供覆盖当前实例的入口。</p>
+<p>DB损坏时：保留原文件→只读诊断→检查最近备份→恢复备份并扫描lock投影→列出可能丢失的任务/设置→重新审计缓存引用。找不到备份时只从本启动器有效lock与目录重建；不得删除未知目录。缓存损坏只隔离并补下，不能清空整个数据根。</p>
+</section><section class="doc" id="doc-7"><h1>公开研究、变更审视与接口核实</h1>
+<p>核实日期：2026-10-22（北京时间）。资料来自官方文档、项目维护方仓库/发布记录和公开接口。本包给出设计推导，不把它说成法律意见或已经通过联调的产品。接口快照见同级“研究证据”，UTC检查时间与原始响应SHA256记录在“核实记录.json”；响应裁剪件另有说明。</p>
+<h2>1. 前文可访问性与本次证据级别</h2>
+<p>读取了引用聊天的最近全部3轮用户消息；助手消息只有 <code>chatgpt-content-reference</code> 标记，没有规格正文，也没有附件。所以对旧方案能核对的仅有已确认目标，不能声称已逐条审阅原助手规格。由本包建立新的FR/ADR/AC/TASK基线，旧稿若补齐再做差异评审。</p>
+<p>证据级别：A＝本次HTTPS实际GET成功并保存响应/摘要；B＝维护方官方文档或源码可读取；C＝设计选择/实施前需联调。技术事实优先A/B；C不伪装成上游保证。未进行任何真实Microsoft账号登录、游戏安装器执行或Windows产品运行。</p>
+<h2>2. PCL公开功能与最新变动</h2>
+<p>历史入口 <code>Hex-Dragon/PCL2</code> 已重定向至 <code>Meloong-Git/PCL</code>。仓库包含启动、下载、实例与设置页面目录，以及公开的源同步说明；目录存在只能证明公开代码结构，不证明某版本运行时仍开放所有能力。<a href="https://github.com/Meloong-Git/PCL">R01 仓库</a>、<a href="https://github.com/Meloong-Git/PCL/tree/main/Plain%20Craft%20Launcher%202/Pages">R02 页面目录</a>。</p>
+<p>GitHub latest API在本次返回2.99.0.0，发布时间2026-10-20 07:01:34 UTC（北京时间15:01:34）。发布说明表示移除MC下载功能。它是PCL自身公开决定；本设计不从其说明推断适用于用户个人工具的法律结论，也不将下载从本项目移除。<a href="https://github.com/Meloong-Git/PCL/releases/tag/2.99.0.0">R03 发布记录</a>。</p>
+<p>2.14.0.0预发布（2026-10-16 UTC）的设计相关变化：已装MC与组件可修改、启动过程可取消；修复Mod筛选与Java兼容选择，以及整合包路径逃逸。对本设计的影响：升级先克隆、版本级共同兼容检查、取消竞态测试、路径安全强制纳入验收。<a href="https://github.com/Meloong-Git/PCL/releases/tag/2.14.0.0">R05 2.14变更</a>。</p>
+<p>2.13.1.0（2026-08-01 UTC）记录移除Quilt选项，并增强删除存档提醒、旧Mod回收与任务管理体验。因而Quilt在本设计属于独立后置适配器；回收与删除预览属于核心保护。<a href="https://github.com/Meloong-Git/PCL/releases/tag/2.13.1.0">R06 2.13.1.0</a>。2.13.1.1随后修复Mod更新选错Loader，说明更新阶段必须再次核查具体文件约束。<a href="https://github.com/Meloong-Git/PCL/releases/tag/2.13.1.1">R07 2.13.1.1</a>。</p>
+<h3>功能覆盖映射（能力对标，非复制实现）</h3>
+<table>
+<thead>
+<tr>
+<th>PCL公开能力族</th>
+<th>证据/可信边界</th>
+<th>K Launcher目标</th>
+<th>阶段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>启动、Microsoft等账号界面、皮肤</td>
+<td>PageLaunch目录；不同登录类型不全部搬入</td>
+<td>Microsoft、受限已验证离线、日志</td>
+<td>M3；皮肤后置</td>
+</tr>
+<tr>
+<td>下载与安装/组件修改</td>
+<td>PageDownload与2.14；2.99下载已移除</td>
+<td>独立官方元数据下载核心，组件克隆升级</td>
+<td>M2/M4/M6</td>
+</tr>
+<tr>
+<td>实例详情/设置/导出</td>
+<td>PageInstance目录</td>
+<td>显式隔离、可回滚修改、完整备份</td>
+<td>M2/M6</td>
+</tr>
+<tr>
+<td>本地Mod、禁用Mod</td>
+<td>PageInstanceMod/Disabled目录</td>
+<td>本地管理+Modrinth共同兼容与锁文件</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>社区内容、整合包</td>
+<td>发布记录中的相关修复</td>
+<td>Modrinth/mrpack完整；CF条件支持</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>Java/网络/界面/启动设置</td>
+<td>PageSetup目录及变更记录</td>
+<td>类型配置、托管Java、代理与下载预算</td>
+<td>M1/M2</td>
+</tr>
+<tr>
+<td>联机、自定义主页/事件、装饰</td>
+<td>PageLink及公开变更的功能族</td>
+<td>联机穿透与远程可执行主页不纳核心</td>
+<td>后续单列</td>
+</tr>
+<tr>
+<td>启动错误分析与帮助</td>
+<td>发布记录/帮助库</td>
+<td>本地确定性诊断与可导出报告</td>
+<td>M3/M6</td>
+</tr>
+</tbody></table>
+<p>本次只阅读公开功能、目录与少量接口资料来做独立设计；不复制PCL的VB/XAML实现、素材、标识或主题。PCL仓库有自定义许可/合理使用说明，并非可假定MIT；未来若要大量参考实现需另行审查准确许可与署名条件。<a href="https://github.com/Meloong-Git/PCL/blob/main/LICENCE">R08 许可文件</a>。本包的K Launcher品牌和视觉按独立设计处理。</p>
+<h2>3. Minecraft与Java（A/B）</h2>
+<p><a href="https://piston-meta.mojang.com/mc/game/version_manifest_v2.json">R09 官方版本根目录</a> 实测HTTP200，latest.release=26.3、latest.snapshot=26.4-snapshot-5。保存1.21.1、26.1和快照JSON，逐个与根目录sha1验证相符。1.21.1声明majorVersion21、component java-runtime-delta；26.1与快照声明majorVersion25、component java-runtime-epsilon。样本不是全版本兼容认证。</p>
+<p><a href="https://feedback.minecraft.net/hc/en-us/articles/44551668333837-Minecraft-Java-Edition-26-1">R04 官方26.1说明</a> 明确Java25及JVM默认改变。结论：不要写死“1.20.5以后全部Java21”；保持版本与Loader约束求交。默认内存与GC也不能把某一版本策略无条件推广到所有实例。</p>
+<p><a href="https://github.com/adoptium/api.adoptium.net/blob/main/docs/cookbook.adoc">R10 Adoptium API cookbook</a> 提供按平台/架构/major选运行时与checksum的流程。本次Windows x64 Java25 JDK assets请求HTTP200；设计固定具体build及package SHA256再下载ZIP，不默认修改系统Java。</p>
+<p>Minecraft主jar与资源通过官方manifest引用下载；本包未下载游戏二进制，不含游戏资源或账号数据。完整下载链在M2用测试实例验证，不能仅因为版本JSON可获取就声称能启动。</p>
+<h2>4. Loader接口与差异（A/B/C）</h2>
+<table>
+<thead>
+<tr>
+<th>提供方</th>
+<th>入口</th>
+<th>本次核实</th>
+<th>设计含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fabric</td>
+<td><a href="https://meta.fabricmc.net/">R11 Meta API</a> <code>/v2/versions/loader/{mc}</code>、<code>.../{loader}/profile/json</code></td>
+<td>1.21.1 loader目录GET200；路由文档可读</td>
+<td>固定build并解析profile；Loader与Fabric API分开</td>
+</tr>
+<tr>
+<td>Forge</td>
+<td><a href="https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json">R12 promotions</a>、Maven</td>
+<td>promotions GET200</td>
+<td>recommended/latest只是候选；完整版本列表及安装器需单独解析</td>
+</tr>
+<tr>
+<td>Forge Installer</td>
+<td><a href="https://github.com/MinecraftForge/Installer/blob/2.0/src/main/java/net/minecraftforge/installer/actions/ClientInstall.java">R13 官方client安装动作</a></td>
+<td>源码可读，包含库、处理器与profile处理</td>
+<td>单个universal JAR不等于完整安装；C＝Windows执行尚未验证</td>
+</tr>
+<tr>
+<td>NeoForge</td>
+<td><a href="https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml">R14 Maven元数据</a></td>
+<td>GET200</td>
+<td>按Minecraft兼容映射选择，不以字符串前缀盲猜所有版本</td>
+</tr>
+<tr>
+<td>NeoForge guide</td>
+<td><a href="https://docs.neoforged.net/user/docs/">R15 用户说明</a></td>
+<td>可读，但“1.20.5-latest→21”的概括与新MC元数据需交叉核实</td>
+<td>新MC以当前精确元数据与具体Loader约束为准；通用网页表格不能覆盖25要求</td>
+</tr>
+<tr>
+<td>Quilt</td>
+<td><a href="https://meta.quiltmc.org/v3/versions/loader/1.21.1">R16 v3 meta</a></td>
+<td>GET200</td>
+<td>仅说明接口存在；生态维护与运行兼容仍需验证，后置</td>
+</tr>
+</tbody></table>
+<h2>5. Microsoft/Xbox/Minecraft登录（B/C）</h2>
+<p><a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow">R17 Microsoft Authorization Code+PKCE</a> 支持桌面应用；<a href="https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code">R18 Device Code</a> 规定轮询、过期和slow_down。设计选系统浏览器PKCE，设备码为经过自有应用验证后才开放的备用路径；不把登录嵌进有IPC权限的WebView。</p>
+<p>Minecraft专用交换链的公开官方资料并不完整。采用维护方客户端源码作为交叉证据，而不误引GDK/XUser文档当成Java第三方启动器合同。例如 <a href="https://github.com/PrismLauncher/PrismLauncher/blob/develop/launcher/minecraft/auth/steps/MinecraftProfileStep.cpp">R19 Prism profile步骤</a> 访问 <code>api.minecraftservices.com/minecraft/profile</code>，将profile404作为与请求失败不同的账号状态。</p>
+<p>规划端点：Microsoft consumers OAuth authorize/token；<code>user.auth.xboxlive.com/user/authenticate</code>；<code>xsts.auth.xboxlive.com/xsts/authorize</code>；<code>api.minecraftservices.com/authentication/login_with_xbox</code>；<code>entitlements/mcstore</code>与<code>minecraft/profile</code>。这些需要在M0/M3用自有获准client ID确认参数、scope、权限与Game Pass行为；本包未实测敏感POST，也不借用其他启动器ID。</p>
+<p><a href="https://help.minecraft.net/hc/en-us/sections/44460521913485">R20 Minecraft Java支持目录</a> 的搜索索引列出Game Service API Review/Application主题，但当前网页正文动态加载，未成功读取该文章完整审批条件。因此“自有应用是否获准”是明确开放项，不能写成“个人使用自动免审批”。M0交付须记录实际申请入口与结果；403需区分接入、账号与服务状态。</p>
+<h2>6. Modrinth、整合包与CurseForge（A/B）</h2>
+<p><a href="https://docs.modrinth.com/api/">R21 API总览</a>：公开读请求通常无需账号token；请求需独特User-Agent；根据rate limit响应头调速。文档当次说明300次/分钟，本设计本地预算更保守，并以服务端实际响应为准。GET <code>/v2/</code> 在本次返回404；这不代表全部服务不可用，应使用有效业务端点做探测。</p>
+<p><a href="https://docs.modrinth.com/api/operations/searchprojects/">R22 搜索</a> 定义facets；<a href="https://docs.modrinth.com/api/operations/getprojectversions/">R23 版本列表</a> 提供files与dependencies；<a href="https://docs.modrinth.com/api/operations/versionfromhash/">R24 Hash识别</a> 提供本地文件映射。本次search(sodium,limit1)与project/sodium/version(1.21.1,fabric)均GET200，后者返回22条样本；版本候选不等于依赖已求解。</p>
+<p><a href="https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack">R25 mrpack格式</a>：清单、文件hash、环境与覆盖目录是安装依据。设计按客户端环境处理，先路径预审后下载与应用覆盖；未知必需依赖阻断。</p>
+<p><a href="https://docs.curseforge.com/rest-api/">R26 CurseForge API</a> 需要API key；文件下载能力可能受上游策略限制。设计不承诺所有CF整合包一键下载，提供手动补齐清单。未取得key、未实测下载权限，故仅列条件支持。</p>
+<h2>7. Tauri/Windows（B/C）</h2>
+<p><a href="https://v2.tauri.app/security/capabilities/">R27 Capabilities</a> 用于限制窗口/IPC权限，但Rust自定义命令仍须做业务与输入校验。<a href="https://v2.tauri.app/distribute/windows-installer/">R28 Windows Installer</a> 描述WebView2依赖与Windows打包。设计采用每用户安装、WebView2检测/修复提示，不默认系统权限；签名与自动更新分发不在个人版首轮范围。</p>
+<p>技术版本号只锁大方向Tauri2/React/TypeScript/Rust；真正开始实施时检查当前兼容版本并锁依赖，不能把研究日称为“所有依赖最新”。本次本机为macOS，未进行Windows 11的进程/凭据/WebView2运行验证。</p>
+<h2>8. 研究结论与实施前复核清单</h2>
+<ul>
+<li>下载保留为产品主路径，不能因PCL的新版本变化而删去FR-03。</li>
+<li>版本与Java均按元数据，精确Loader约束和固定fixture复核；网页概括冲突时停止并查具体版本。</li>
+<li>Mod兼容与更新按具体文件求交，保留旧文件回滚；整合包越界检查先于创建输出。</li>
+<li>OAuth成功、Minecraft API接入、权益、profile与实际启动是不同的验收门。</li>
+<li>M0优先消除账号接入、安装器行为、Windows路径/凭据这三类高风险未知，再推进主闭环。</li>
+<li>后续agents每次重新联网核实时补checked_at、来源与差异记录，不覆盖原始研究证据；本次快照仅供解释设计，不作为永久版本列表。</li>
+</ul>
+</section><section class="doc" id="doc-8"><h1>验收矩阵与阶段门禁</h1>
+<p>所有用例都需记录Windows 11 build、设备/磁盘、启动器提交版本、MC/Loader/Java精确build、夹具摘要与结果。设计稿通过不等于产品通过。以下验收目前均为“待实现/待执行”，不能标成已通过。</p>
+<h2>1. 功能与恢复验收</h2>
+<table>
+<thead>
+<tr>
+<th>AC</th>
+<th>关联需求</th>
+<th>前置/操作</th>
+<th>必须结果</th>
+<th>阶段</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AC-01</td>
+<td>FR01/14</td>
+<td>干净普通用户，首次打开，选择有中文/空格的本地目录</td>
+<td>无管理员要求；读写探测成功；设置重启保持；无写权限有明确修复入口</td>
+<td>M1</td>
+</tr>
+<tr>
+<td>AC-02</td>
+<td>FR02</td>
+<td>联网加载目录后断网重开，过滤正式/快照，搜不存在版本</td>
+<td>正式与快照分开；缓存时间清晰；空态可清筛选；首页不等待网络</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-03</td>
+<td>FR03/05</td>
+<td>分别全新安装原版1.20.1、1.21.1、26.1</td>
+<td>客户端/库/资源/logging及Java到位；校验通过后才Ready；Java分别匹配17/21/25</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-04</td>
+<td>FR03/08</td>
+<td>测试源返回被修改字节/错误size/损坏metadata</td>
+<td>拒绝提交；隔离坏对象；有限重试；缓存中无“已验证”坏文件</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-05</td>
+<td>FR08</td>
+<td>大文件中途断网/退出/恢复；覆盖206、200、416、ETag变化</td>
+<td>不重复追加；正确续传或重下；最终hash与可信值一致</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-06</td>
+<td>FR08</td>
+<td>连续双击确认、两实例同时请求同一artifact、取消其中一个</td>
+<td>同命令只有一task；同hash只有一写者；另一实例仍完成；引用正确</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-07</td>
+<td>FR08</td>
+<td>预检空间不足；写到一半卷被填满</td>
+<td>commit前阻断或NeedsAction；保留可复用缓存；清理后可继续；不损坏旧实例</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-08</td>
+<td>FR04/08</td>
+<td>在Prepared/FilesStaged/FilesSwapped/DbCommitted各边界强杀</td>
+<td>重启恢复到一致revision；不丢旧文件/存档；未审计不Ready</td>
+<td>M2/M6</td>
+</tr>
+<tr>
+<td>AC-09</td>
+<td>FR04</td>
+<td>复制/重命名/删除有存档实例再恢复</td>
+<td>内部UUID路径稳定；隔离saves；删除范围清晰；回收可恢复；不删共享对象</td>
+<td>M2/M6</td>
+</tr>
+<tr>
+<td>AC-10</td>
+<td>FR05</td>
+<td>本机Java8/17/21/25混存、失效路径、不兼容override</td>
+<td>探测真实major/arch；不选过高不兼容Java；有可用下载入口；不改系统PATH</td>
+<td>M2/M4</td>
+</tr>
+<tr>
+<td>AC-11</td>
+<td>FR07</td>
+<td>合法账号启动上述原版，查看主菜单后关闭再开</td>
+<td>参数/资源/native正确；无多余控制台；正常跟踪进程与日志；重复启动被约束</td>
+<td>M3</td>
+</tr>
+<tr>
+<td>AC-12</td>
+<td>FR09</td>
+<td>Fabric1.21.1、Forge1.20.1、NeoForge1.21.1固定样本，处理器注入失败</td>
+<td>成功样本到主菜单并确认Loader；失败回滚旧实例可启动；保存错误链</td>
+<td>M4</td>
+</tr>
+<tr>
+<td>AC-13</td>
+<td>FR06</td>
+<td>token临近过期、多并发启动、刷新失败/取消浏览器/回调重放</td>
+<td>单次refresh；错误state拒绝；取消不残留等待；不把token返回UI或日志</td>
+<td>M3</td>
+</tr>
+<tr>
+<td>AC-14</td>
+<td>FR06</td>
+<td>正常购买、订阅、无权益、无profile、API403、服务5xx夹具+自有账号联调</td>
+<td>状态分别显示；401有限刷新；403不绕过；未获准client不能标验收完成</td>
+<td>M0/M3</td>
+</tr>
+<tr>
+<td>AC-15</td>
+<td>FR10/11</td>
+<td>本地JAR识别、禁用/启用、安装含required/optional/embedded依赖项目</td>
+<td>文件名/内容锁一致；必需依赖齐；可选不默认装；不重复embedded</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>AC-16</td>
+<td>FR11</td>
+<td>搜索结果项目分别支持MC和Loader、但无同一version兼容；依赖冲突/环</td>
+<td>安装前阻断无解计划；显示冲突链；有解环可统一事务提交</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>AC-17</td>
+<td>FR10</td>
+<td>更新Mod下载失败、提交中断、外部改文件、游戏运行中操作</td>
+<td>旧版完整；revision冲突要求重预览；运行时不替换活动文件</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>AC-18</td>
+<td>FR12</td>
+<td>合法mrpack含optional/server-only/client-overrides/未知依赖</td>
+<td>正确客户端选择与覆盖顺序；未知必需依赖阻断；不完整不Ready</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>AC-19</td>
+<td>FR12</td>
+<td>CF下载URL为空/无key/作者禁下载</td>
+<td>列出缺失与官方入口；允许用户补文件；不伪称一键安装完成</td>
+<td>M5</td>
+</tr>
+<tr>
+<td>AC-20</td>
+<td>FR07/13</td>
+<td>注入Java不匹配、缺库、缺Mod依赖、无日志/未知崩溃</td>
+<td>仅给证据支持的原因；未知则提示人工查看；导出可用且脱敏</td>
+<td>M3/M6</td>
+</tr>
+<tr>
+<td>AC-21</td>
+<td>FR12/13</td>
+<td>ZIP含..、反斜杠越界、UNC、ADS、设备名、重复大小写、symlink、解压炸弹</td>
+<td>整体拒绝或NeedsAction限额；根外无创建/覆盖；无脚本执行</td>
+<td>M1/M5</td>
+</tr>
+<tr>
+<td>AC-22</td>
+<td>FR14</td>
+<td>远程HTML含脚本/事件/iframe；任意IPC路径/命令请求</td>
+<td>内容清理；远程页面无能力；Rust拒绝越界请求；TLS失败不可忽略</td>
+<td>M1</td>
+</tr>
+<tr>
+<td>AC-23</td>
+<td>FR13</td>
+<td>PCL共享/隔离两种目录迁入；中途断电/目标离线</td>
+<td>源hash与文件未变；共享归属可审查；新实例可验证；恢复安全</td>
+<td>M6</td>
+</tr>
+<tr>
+<td>AC-24</td>
+<td>FR13/14</td>
+<td>从旧schema迁移中断；旧程序读新schema；备份回滚</td>
+<td>原备份可读；迁移幂等；旧版只读；能明确恢复而不删未知数据</td>
+<td>M6</td>
+</tr>
+<tr>
+<td>AC-25</td>
+<td>FR07</td>
+<td>取消预检与spawn竞态、PID复用、关启动器留游戏</td>
+<td>无孤儿误报；不误杀其他Java；用户能理解进程跟踪边界</td>
+<td>M3</td>
+</tr>
+<tr>
+<td>AC-26</td>
+<td>FR14</td>
+<td>开启限速、代理认证、429/Retry-After、证书错误</td>
+<td>限速有效；secret不落配置；域级退避；证书错误与超时区分</td>
+<td>M2</td>
+</tr>
+<tr>
+<td>AC-27</td>
+<td>FR08</td>
+<td>前端事件重复/乱序/缺口/重连</td>
+<td>revision单调；自动补快照；不重复toast/完成操作</td>
+<td>M1/M2</td>
+</tr>
+<tr>
+<td>AC-28</td>
+<td>FR13</td>
+<td>完整实例快照恢复为新实例、损坏备份</td>
+<td>hash审计；新实例存档可用；损坏备份不覆盖当前实例</td>
+<td>M6</td>
+</tr>
+<tr>
+<td>AC-29</td>
+<td>NFR01–04</td>
+<td>100实例/1000Mod/1万资源，在指定基准设备</td>
+<td>记录20次p95与内存；达到预算或明确缺口，不靠截图代替测量</td>
+<td>M6</td>
+</tr>
+<tr>
+<td>AC-30</td>
+<td>NFR06</td>
+<td>键盘、125/150/200%缩放、深色/高对比、减少动画</td>
+<td>焦点可见；对话框圈定与返回；内容不丢；状态不只靠颜色</td>
+<td>M1/M6</td>
+</tr>
+</tbody></table>
+<p>| AC-31 | FR08 | Failed后重试；同plan不同key双提交；Canceled重试 | 新execution保留旧错误；同plan同task；Canceled要求新plan | M2 |
+| AC-32 | FR08/14 | snapshot期间产生事件；游标有自然空号；旧execution进度迟到 | 不漏状态不死循环补拉；进度按execution+seq独立去重 | M1/M2 |
+| AC-33 | FR04/08/14 | 已接受暂停任务时启动；GC与commit；睡眠超lease | 实例互斥；不误删引用；不按到期抢占仍活跃输出 | M2/M6 |
+| AC-34 | FR06/13/14 | DPAPI写/删失败；引用变化时GC；导出选项变化 | CleanupPending/旧值可恢复；二次mark；脱敏预览摘要重新生成 | M3/M6 |
+| AC-35 | FR04/10 | 同名实例、跨实例路由、搜索响应乱序 | 全部由UUID绑定；Mod/日志/首页目标一致；旧响应不覆盖新目标 | M2/M5 |
+| AC-36 | FR03/05 | 未知下载/展开大小、用户确认预算、运行中超预算 | 未确认不commit；预算固定且超限NeedsAction；不伪报0字节 | M2 |
+| AC-37 | FR03/08 | 预览到提交间目录换卷、计划过期、摘要改变 | PATH_IDENTITY_CHANGED/PLAN_EXPIRED；旧缓存保留；必须重预览 | M2 |
+| AC-38 | FR14 | 修改多个设置分类后离页；保存失败；revision冲突 | 草稿保留；保存/放弃/继续编辑；旧持久值不丢；主题放弃恢复 | M1 |
+| AC-39 | FR04/13/15 | 回收恢复/永久清理、克隆升级、备份恢复、跨根迁移 | 每项有预览/任务/异常闭环；原实例与存档不被隐式覆盖 | M6 |
+| AC-40 | NFR06 | 1440/1360/1100DIP，浅深色、长文本、所有UI-ID | token符合09；无悬空交互；设计工具不入产品；逐页截图与键盘证据 | M1/M6 |</p>
+<h2>2. 阶段退出条件</h2>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>交付物</th>
+<th>退出门</th>
+<th>不能绕开的限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>M0 风险验证</td>
+<td>自有OAuth/API结论、官方metadata样本、Loader样本、Windows路径/凭据记录、ADR更新</td>
+<td>基础门T01/03/04/05/06有证据；认证门T02单独通过。两门均通过才M0完成</td>
+<td>认证待批不阻塞已过基础门的M1/M2/M4；M3真实认证与P0整机仍阻塞</td>
+</tr>
+<tr>
+<td>M1 壳与基础</td>
+<td>Windows窗口、导航、设计token、数据仓储、路径边界、事件同步</td>
+<td>AC01/21基础/22/27基础/30基础</td>
+<td>不用mock常驻代替Rust真相源</td>
+</tr>
+<tr>
+<td>M2 原版安装</td>
+<td>持久队列、下载/缓存/Java、实例与修复</td>
+<td>AC02–10相关/26/27，文件提交故障注入</td>
+<td>下载100%不是Ready</td>
+</tr>
+<tr>
+<td>M3 登录与启动</td>
+<td>自有认证、启动解析、进程、日志、诊断基础</td>
+<td>AC11/13/14/20基础/25；完整P0旅程</td>
+<td>未获API权限则阶段未过；继续其他独立任务</td>
+</tr>
+<tr>
+<td>M4 Loader</td>
+<td>Fabric→Forge/NeoForge→旧版/Quilt专项</td>
+<td>AC10扩展/12；每适配器固定样本</td>
+<td>列表可查询不代表可安装</td>
+</tr>
+<tr>
+<td>M5 内容</td>
+<td>Mod管理/Modrinth/资源与mrpack/CF条件流程</td>
+<td>AC15–19/21扩展，更新回滚</td>
+<td>无全部兼容求解不开放一键更新</td>
+</tr>
+<tr>
+<td>M6 稳定迁移</td>
+<td>PCL导入、克隆升级、备份恢复、性能/无障碍</td>
+<td>所有P0/P1 AC（含AC31–40）通过；缺口清单为空或用户明确裁剪</td>
+<td>不在性能优化中删校验/事务</td>
+</tr>
+<tr>
+<td>M7 增强</td>
+<td>皮肤、规则增强、可选AI</td>
+<td>独立PRD与隐私验收，核心无回归</td>
+<td>AI不能成为启动/下载依赖</td>
+</tr>
+</tbody></table>
+<h2>3. 测试分层与固定夹具</h2>
+<p>纯单元：rules/继承解析、Maven坐标、路径规范、依赖求解、状态机合法跃迁。合同测试：每Provider的真实响应裁剪fixture与新字段、缺字段、未知枚举。集成：SQLite+临时目录+本地可控HTTP服务，覆盖Range与错误码、任务重启和文件journal。端到端：Windows真实WebView2/凭据/Java/MC到主菜单。安全类和恢复类不得只用UI mock通过。</p>
+<p>联网测试默认不频繁打上游；固定fixture与本地服务跑回归，阶段验收时小流量真实联调并记录时间。任何真实凭据从测试账户的安全存储读取，不进fixture、截图、PR说明。上游漂移与实现缺陷分开归因，但用户不可用时不能宣称通过。</p>
+<h2>4. 每次交接报告模板</h2>
+<pre><code class="language-text">任务ID / 关联FR、ADR、AC：
+本次范围与实际结果：
+接口/数据schema差异：
+验证环境与精确版本：
+执行的验收与证据路径：
+故障注入/恢复结果：
+未通过项、风险与下一步：
+是否修改用户数据 / 回退办法：
+</code></pre>
+<p>交接包中的演示交互只验证设计可浏览与状态表达；这些产品AC均留给实施阶段，禁止把原型测试记录冒充产品测试。</p>
+<h2>v2.0追加验收归属</h2>
+<p>M1新增AC32基础/38/40；M2新增AC31/32/33/35基础/36/37；M3新增AC34凭据；M5新增AC35完整；M6收口AC33/34/39/40。上述均为待实现与待执行；本轮只检查设计对应关系。</p>
+</section><section class="doc" id="doc-9"><h1>视觉与交互规范 · Quiet Desktop</h1>
+<p>设计基线2.0。K Launcher，面向Windows 11的简洁桌面工作台。色彩与尺寸唯一来源是同包“设计契约/视觉令牌.json”；HTML是高保真视觉参考，JS仅为审阅交互。系统操作仍由后续Rust实现。2.0替代1.0的Moss &amp; Terrain视觉。</p>
+<h2>1. 信息层次与视觉取舍</h2>
+<p>以白与冷灰建立界面，靛蓝仅用于主要动作、选中与焦点。首页有一幅低饱和原创几何岛屿，其他页面不重复大插画。删除首页口号与重复统计，优先显示实例名、MC/Loader/Java、账号、状态和启动按钮。最近实例用紧凑行，下载使用单张动态摘要；设置/任务/Mod使用信息行与分隔线，避免每个字段包一层卡片。</p>
+<p>每个业务区域只有一个主CTA；首页“启动游戏”为实心，“安装游戏”为描边；安装页“预览安装计划”为实心，确认弹窗再显示“确认并安装”。空间不足/未知不能确认；disabled旁常驻原因。危险操作用红色文字或浅红底，并显示具体对象。</p>
+<p>原型外部DESIGN工具条、退出预览、模拟提交是审阅工具，不属于产品。产品页面不出现Rust/IPC/schema/“演示”等词。初次使用、错误、空态用短句提供下一步；原型注释与真实文案可在12追踪表中区分。</p>
+<h2>2. 色彩、文字与空间</h2>
+<table>
+<thead>
+<tr>
+<th>语义</th>
+<th>浅色</th>
+<th>深色</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Canvas</td>
+<td>#F6F7F9</td>
+<td>#15171C</td>
+</tr>
+<tr>
+<td>Surface</td>
+<td>#FFFFFF</td>
+<td>#1D2027</td>
+</tr>
+<tr>
+<td>Sidebar</td>
+<td>#F0F2F5</td>
+<td>#191B22</td>
+</tr>
+<tr>
+<td>Primary text</td>
+<td>#20232B</td>
+<td>#ECEEF5</td>
+</tr>
+<tr>
+<td>Secondary text</td>
+<td>#626875</td>
+<td>#A6ADBD</td>
+</tr>
+<tr>
+<td>Border</td>
+<td>#E2E5EB</td>
+<td>#353B49</td>
+</tr>
+<tr>
+<td>Accent</td>
+<td>#4C55D8</td>
+<td>#A9B0FF</td>
+</tr>
+<tr>
+<td>Accent soft</td>
+<td>#EEF0FF</td>
+<td>#2B304D</td>
+</tr>
+<tr>
+<td>Warning text / surface</td>
+<td>#835316 / #FFF5E4</td>
+<td>#E9C183 / #3A3020</td>
+</tr>
+<tr>
+<td>Danger text / surface</td>
+<td>#B33A44 / #FFF0F2</td>
+<td>#FFADB7 / #3D262F</td>
+</tr>
+</tbody></table>
+<p>浅色主按钮白字，深色主按钮字色#181C38；不能把白字沿用到浅紫按钮。普通文字目标≥4.5:1，大字及有意义的控件边界≥3:1；浅分隔线只作装饰，不单独承担控件识别。输入框焦点、单选/开关必须用较深边界与轮廓。状态均有文本，不用颜色单独说明。</p>
+<p>字体：Segoe UI Variable→Segoe UI→Microsoft YaHei UI→system-ui。页面标题28/1.35，首页实例标题36/1.3，区块标题17/1.5，正文14/1.6，操作13/1.5，说明12/1.6；设计注释可11但不承担产品必需操作。中文可回退系统字体，不依赖远程字体。Consolas只用于日志/路径/摘要，数字使用tabular-nums。</p>
+<p>间距4/8/12/16/20/24/32/40；页面边距32，卡片内24，主列间24。卡片12圆角，按钮/输入8，对话框16，标签5。常规卡片无阴影；只有应用窗口/弹窗有柔和阴影。描边1px。图标24viewBox、18–20px显示、1.65px描边、圆端；独立按钮有中文accessible name。</p>
+<h2>3. 桌面布局与尺寸</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>冻结值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>目标画板 / 默认窗口 / 最小</td>
+<td>1440×960 / 1360×880 / 1100×720 DIP</td>
+</tr>
+<tr>
+<td>标题栏 / 顶部路径区</td>
+<td>36 / 56 DIP</td>
+</tr>
+<tr>
+<td>侧栏</td>
+<td>200；≤1200时184；不收起成无文字图标栏</td>
+</tr>
+<tr>
+<td>首页</td>
+<td>主启动卡≥294高；下方最近实例+290宽下载摘要</td>
+</tr>
+<tr>
+<td>安装</td>
+<td>内容自适应+300宽摘要；≤1200摘要270，主间距20</td>
+</tr>
+<tr>
+<td>Mod表格</td>
+<td>行≥64，名称列弹性，状态/操作固定，长名称省略并可查看</td>
+</tr>
+<tr>
+<td>任务</td>
+<td>顶部四指标共享单容器；任务单卡；下载进度4px并有文字</td>
+</tr>
+<tr>
+<td>设置</td>
+<td>二级导航164，内容自适应，间距28</td>
+</tr>
+<tr>
+<td>输入/按钮</td>
+<td>输入40高，普通按钮36，主启动44，图标按钮至少32×32</td>
+</tr>
+<tr>
+<td>对话框</td>
+<td>默认560宽、最大88vh、内部滚动，确认区始终可见</td>
+</tr>
+</tbody></table>
+<p>真实窗口主内容独立滚动，侧栏固定；本HTML为便于独立打开允许页面滚动。1100DIP保证关键字段可读，较宽表格区域内部水平滚动。680以下仅供移动设备看设计，非产品支持范围。1440/1360/1100画板只是审阅工具，以1:1DIP实现，不能把整个页面缩放到小字来通过无障碍验收。</p>
+<p>Windows125/150/200%以实际可用DIP和系统字体检查。最小DIP超出屏幕工作区时使用工作区可用尺寸并启用内容滚动，不允许窗口按钮落在屏幕外。窗口控制使用真实Tauri/Windows能力，HTML符号是示意。减少动画移除位移/缩放，保留即时状态反馈。</p>
+<h2>4. 页面视觉规格</h2>
+<table>
+<thead>
+<tr>
+<th>页面</th>
+<th>首要信息</th>
+<th>布局与主动作</th>
+<th>追踪</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P01首页</td>
+<td>当前实例及状态，版本/Java/账号</td>
+<td>白底启动卡+淡色几何图；启动实心，管理描边；最近实例/下载在下方</td>
+<td>UI-01–03</td>
+</tr>
+<tr>
+<td>P02实例库</td>
+<td>名称、MC、Loader、就绪/损坏/占用</td>
+<td>三列简洁卡，不重复地形；新建主CTA，搜索/导入次级</td>
+<td>UI-04–05</td>
+</tr>
+<tr>
+<td>P03安装</td>
+<td>版本与组件，实例名，固定计划摘要</td>
+<td>两块表单：01版本、02组件与实例；右栏下载/空间/Java/来源</td>
+<td>UI-06–09</td>
+</tr>
+<tr>
+<td>P04详情</td>
+<td>实例状态、组件、内存、内容与运行</td>
+<td>小图标+身份横条，启动主CTA；修复、克隆、备份分层</td>
+<td>UI-10–15</td>
+</tr>
+<tr>
+<td>P05Mod</td>
+<td>目标实例、版本/Loader、内容类型</td>
+<td>常驻目标选择条；已装表格/发现卡；启停同样先预览</td>
+<td>UI-16–20</td>
+</tr>
+<tr>
+<td>P06任务</td>
+<td>用户作业、实际阶段、进度、恢复动作</td>
+<td>摘要条+任务行；按钮依据capabilities；100%不代替提交完成</td>
+<td>UI-21–23</td>
+</tr>
+<tr>
+<td>P07账号</td>
+<td>当前账号、访问/档案状态、验证时刻</td>
+<td>简洁身份卡，添加/重登；移除不影响实例列表</td>
+<td>UI-24–25</td>
+</tr>
+<tr>
+<td>P08设置</td>
+<td>有效值、继承来源、保存状态</td>
+<td>分类切换保留草稿；存储内回收/恢复/迁移入口</td>
+<td>UI-26–31</td>
+</tr>
+<tr>
+<td>P09日志</td>
+<td>当前运行、时间与等级、证据</td>
+<td>暗日志面板配浅外围；本地导出先预览</td>
+<td>UI-32–33</td>
+</tr>
+</tbody></table>
+<h2>5. 状态与组件契约</h2>
+<p>按钮：normal/hover/pressed/focus/pending/disabled；pending保留宽度、禁重复提交、文字明确“生成计划中”。焦点3px，offset3px。禁用按钮的原因在近邻文本或aria-describedby，不能只有灰色。任务Committing时显示“正在保存安装结果”，无可点击的暂停/取消。</p>
+<p>输入：独立label、help与error；错误不替换label，提交聚焦首个错误；字符计数按Unicode规则。select/radio真实暴露checked/selected。标签页用tablist/tab/tabpanel与左右键/Enter，或导航链接语义；不能混用“按钮外观”和不存在的aria角色。</p>
+<p>模态：打开聚焦标题或首个合理输入；Tab/Shift+Tab圈定，背景inert，Esc关闭不产生副作用的预览；关闭返回触发者（触发者已卸载则页面h1）。危险操作默认焦点取消。后端提交已接受时关闭弹窗只关闭视图，不取消任务。</p>
+<p>设置：草稿跨分类保留；离页提供保存/放弃/继续编辑；主题即时预览，放弃恢复。保存失败保留草稿、错误和旧持久值。原型能演示主要草稿行为；全部SettingsValues以11为准，不以画出的字段子集裁剪产品功能。</p>
+<p>进度：未知总量不画百分比，显示“已下载X / 总量待确认”；暂停与离线速度为0；校验/安装用步骤或不定进度；失败展示错误码、影响和恢复按钮；结束结果常驻卡片，toast辅助显示3.4秒。下载状态不复用实例Ready标签。</p>
+<h2>6. 设计审阅场景与产品状态</h2>
+<p>顶部可切正常/空/离线/失败/登录失效。原型模拟的空态是整页fixture，不是产品删除全部数据。移除账号仅清演示账号；切换Mod实例不会继续展示上个Fabric实例的内容。原型少量列表仍为固定样例，非所有跨页业务状态的完整模拟。</p>
+<p>需要逐项实现的其他状态：加载与取消、stale目录、未知大小、限流倒计时、处理器不可暂停、提交中、Interrupted恢复、外部Mod修改、登录权限受限、无档案、secret清理失败、未保存设置。画法使用本文件组件状态，行为以05/11/12为准。原型没有完整展开的向导不得被删去，见12第3节。</p>
+<h2>7. 视觉与功能验收方法</h2>
+<p>AC40要求每个UI-ID有实际React→Rust→状态反馈闭环，不能只展示设计HTML。提交1440×960、1360×880、1100×720的浅/深色代表页面截图，至少覆盖首页、安装、Mod、任务、设置；200%缩放检查无信息丢失，窄表格可滚动。鼠标、键盘、高对比、减少动画分别验证。布局位置/尺寸以token为准，Windows字体渲染差异不要求逐像素相同；关键几何误差≤4DIP，不能换色/缩字来掩盖布局问题。</p>
+<p>设计审阅工具、模拟按钮、版本演示算法不能出现在真实构建。最终验证范围仍是Windows应用，不是本轮静态浏览器预览。</p>
+</section><section class="doc" id="doc-10"><h1>分阶段实施任务清单</h1>
+<p>这是供后续coding agents执行的工作规格，不是本次执行授权。本次仅交付设计。任务状态全部为“待开始”；每阶段完成后更新此表与验收证据。</p>
+<p>开始实施的agent只做用户指定阶段；用户说“开始实现完整方案”才按依赖逐阶段推进，不因一次授权而略过阶段门。任务可在同阶段按模块拆分，但共享数据模型/命令契约由集成负责人先冻结；并行agent需使用不冲突的文件边界与独立审查，不能各自发明schema。</p>
+<h2>M0 · 风险验证与实施基线</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T00</td>
+<td>读取全包，建立FR/ADR/AC追踪表与实施差异清单</td>
+<td>无</td>
+<td>明确设计选择、未验证项；不抄原型样例成真实配置</td>
+</tr>
+<tr>
+<td>T01</td>
+<td>在目标Win11记录build、CPU/内存/磁盘与WebView2；确认x64范围</td>
+<td>T00</td>
+<td>可复现环境清单、基准测量计划</td>
+</tr>
+<tr>
+<td>T02</td>
+<td>申请/配置自有Microsoft public client，验证PKCE与Minecraft API接入</td>
+<td>T00</td>
+<td>AC14真实证据；若待批，记录阻塞而不借用他人ID</td>
+</tr>
+<tr>
+<td>T03</td>
+<td>固定原版样本JSON及其摘要，验证Java17/21/25约束与新编号</td>
+<td>T00</td>
+<td>实际上游响应fixture、版本差异记录</td>
+</tr>
+<tr>
+<td>T04</td>
+<td>获取固定Fabric/Forge/NeoForge样本；审计安装器profile/processor输出</td>
+<td>T03</td>
+<td>兼容矩阵、需Java版本、可重入/失败回滚策略</td>
+</tr>
+<tr>
+<td>T05</td>
+<td>Windows凭据端口、路径边界/长路径/中文/重解析点试验</td>
+<td>T01</td>
+<td>AC21/22基础与凭据secret不泄露证据</td>
+</tr>
+<tr>
+<td>T06</td>
+<td>按11/12冻结schema1、IPC v1、基线2.0与依赖版本；分别记录基础门与认证门</td>
+<td>T01/T03/T04/T05；T02有结论或阻塞记录</td>
+<td>基础门通过允许M1/M2/M4独立工作；认证未通过不得开始真实认证验收或宣称M0/M3全部完成</td>
+</tr>
+</tbody></table>
+<h2>M1 · 原生壳、设计系统与本地基础</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T10</td>
+<td>建立Rust/Tauri2/React项目与Windows每用户开发运行流程</td>
+<td>T06；未来用户授权</td>
+<td>普通用户可运行；本次设计包没有此项目</td>
+</tr>
+<tr>
+<td>T11</td>
+<td>实现视觉token、布局、9路由壳、明暗/高对比/键盘导航</td>
+<td>T10</td>
+<td>09文档+原型对照；AC30基础</td>
+</tr>
+<tr>
+<td>T12</td>
+<td>SQLite仓储、revision、迁移记录、配置投影与备份</td>
+<td>T10</td>
+<td>设置失败不覆盖旧值；schema更高时只读</td>
+</tr>
+<tr>
+<td>T13</td>
+<td>根目录授权、路径规范、staging/objects/trash文件服务</td>
+<td>T05/T12</td>
+<td>AC01/21/22；负向fixture全通过</td>
+</tr>
+<tr>
+<td>T14</td>
+<td>命令白名单与统一error、事件游标/快照恢复</td>
+<td>T12/T13</td>
+<td>AC27；远程页面无敏感能力</td>
+</tr>
+<tr>
+<td>T15</td>
+<td>首次运行、设置有效值、保存/验证、无实例空态</td>
+<td>T11/T14</td>
+<td>AC01；用户操作闭环；不依赖在线服务</td>
+</tr>
+</tbody></table>
+<h2>M2 · 持久下载与原版实例</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T20</td>
+<td>Catalog与VersionResolver纯逻辑，继承/rules/旧参数fixture</td>
+<td>T03/T14</td>
+<td>AC02；循环/未知规则错误可追踪</td>
+</tr>
+<tr>
+<td>T21</td>
+<td>TaskEngine DAG/lease/checkpoint/幂等/取消/恢复</td>
+<td>T12–14</td>
+<td>AC06/08基础；取消不误伤共享下载</td>
+</tr>
+<tr>
+<td>T22</td>
+<td>DownloadService Range、退避、代理、限速、重定向与hash</td>
+<td>T13/T21</td>
+<td>AC04/05/26；200/206/416/429矩阵</td>
+</tr>
+<tr>
+<td>T23</td>
+<td>ContentStore引用、验证记录、兼容投影与安全GC预览</td>
+<td>T22</td>
+<td>无引用对象可清，有引用对象不误删</td>
+</tr>
+<tr>
+<td>T24</td>
+<td>RuntimeService探测、Adoptium ZIP计划/校验/托管安装</td>
+<td>T03/T22</td>
+<td>AC10；不修改系统PATH</td>
+</tr>
+<tr>
+<td>T25</td>
+<td>InstallPlanner与跨FS/DB journal，官方client/assets/libs/logging</td>
+<td>T20–24</td>
+<td>AC03/07/08；hash正确但未提交不Ready</td>
+</tr>
+<tr>
+<td>T26</td>
+<td>安装页、实例库/详情、任务页接真实DTO与控制</td>
+<td>T11/T25</td>
+<td>AC02–09相关；双击仅一作业；未知大小不伪报</td>
+</tr>
+<tr>
+<td>T27</td>
+<td>原版修复、实例重命名/克隆/回收基础</td>
+<td>T25/T26</td>
+<td>存档保持；AC09；修复范围可预览</td>
+</tr>
+</tbody></table>
+<h2>M3 · Microsoft登录、启动与日志</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T30</td>
+<td>AccountService PKCE、XBL/XSTS/MC交换、权益/profile状态</td>
+<td>T02/T05/T14</td>
+<td>AC13/14；真实自有client联调；无秘密进入前端</td>
+</tr>
+<tr>
+<td>T31</td>
+<td>刷新singleflight、撤销/过期、移除与受限离线门</td>
+<td>T30</td>
+<td>不把403/无权益当离线成功；未验证离线路径不开放</td>
+</tr>
+<tr>
+<td>T32</td>
+<td>LaunchPlan参数解析、Java/native/classpath、Windows命令长度策略</td>
+<td>T20/T24/T25</td>
+<td>固定版本解析正确、无未解析必要变量、无shell拼接</td>
+</tr>
+<tr>
+<td>T33</td>
+<td>受控进程与run会话、启动取消/停止、PID身份/重启恢复</td>
+<td>T32</td>
+<td>AC25；不误杀其他Java</td>
+</tr>
+<tr>
+<td>T34</td>
+<td>日志轮换/检索/等级、本地规则与脱敏导出</td>
+<td>T33</td>
+<td>AC20；导出预览与secret扫描</td>
+</tr>
+<tr>
+<td>T35</td>
+<td>首页/账号/详情/日志页真实联调，完整P0旅程</td>
+<td>T26/T30–34</td>
+<td>AC11/13/14/20/25；真实主菜单证据</td>
+</tr>
+</tbody></table>
+<h2>M4 · Loader与旧版专项</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T40</td>
+<td>Fabric兼容查询、profile合成、组件锁</td>
+<td>T04/T25/T32</td>
+<td>AC12 Fabric固定样本到主菜单</td>
+</tr>
+<tr>
+<td>T41</td>
+<td>Forge安装profile/processor适配、输出hash与回滚</td>
+<td>T04/T40</td>
+<td>AC12 Forge成功+处理器失败+中断用例</td>
+</tr>
+<tr>
+<td>T42</td>
+<td>NeoForge独立适配器和准确兼容映射</td>
+<td>T04/T41</td>
+<td>AC12 NeoForge，不以Forge规则盲套</td>
+</tr>
+<tr>
+<td>T43</td>
+<td>Java8/1.12.2与旧资产/native/参数专项</td>
+<td>T20/T32/T41</td>
+<td>AC10扩展，样本通过才标支持</td>
+</tr>
+<tr>
+<td>T44</td>
+<td>Quilt v3研究与受限适配，支持标签与实验开关</td>
+<td>T40</td>
+<td>独立固定样本；失败不影响主Loader</td>
+</tr>
+<tr>
+<td>T45</td>
+<td>组件选择、安装/修复UI，禁止未经验证组合</td>
+<td>T40–44</td>
+<td>支持矩阵准确，无虚假推荐</td>
+</tr>
+</tbody></table>
+<h2>M5 · Mod、社区内容与整合包</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T50</td>
+<td>本地内容索引、有限元数据读取、启停、未知来源</td>
+<td>T13/T27/T33</td>
+<td>AC15/17；运行中锁；未知文件保留</td>
+</tr>
+<tr>
+<td>T51</td>
+<td>Modrinth Provider搜索/版本/hash，UA/限额/缓存</td>
+<td>T22/T50</td>
+<td>AC16；具体版本共同兼容；410提示</td>
+</tr>
+<tr>
+<td>T52</td>
+<td>依赖求解与锁、冲突解释、optional/embedded、环处理</td>
+<td>T51</td>
+<td>AC15/16；无解不得commit</td>
+</tr>
+<tr>
+<td>T53</td>
+<td>内容变更计划、旧文件回滚、原子更新与外部改动检测</td>
+<td>T25/T50/T52</td>
+<td>AC17；失败旧版完整，revision冲突需重预览</td>
+</tr>
+<tr>
+<td>T54</td>
+<td>mrpack安全导入、env/覆盖层/依赖/手动缺文件</td>
+<td>T13/T45/T52/T53</td>
+<td>AC18/21全量；不执行脚本</td>
+</tr>
+<tr>
+<td>T55</td>
+<td>CurseForge条件适配/manifest识别/手动补齐</td>
+<td>T54</td>
+<td>AC19；无key/禁下载明确降级</td>
+</tr>
+<tr>
+<td>T56</td>
+<td>资源包/光影包作为内容kind，禁用与兼容规则</td>
+<td>T51–53</td>
+<td>安装目标目录与包类型正确；不冒充Mod依赖</td>
+</tr>
+<tr>
+<td>T57</td>
+<td>Mod页发现/已装/更新/依赖预览接真实计划</td>
+<td>T50–56</td>
+<td>UI与真实队列一致；原型模拟按钮不残留</td>
+</tr>
+</tbody></table>
+<h2>M6 · 迁移、稳定性与核心覆盖收口</h2>
+<table>
+<thead>
+<tr>
+<th>TASK</th>
+<th>工作与具体交付</th>
+<th>依赖</th>
+<th>完成依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T60</td>
+<td>PCL/官方目录只读扫描、共享/隔离判定与复制导入</td>
+<td>T27/T45/T53</td>
+<td>AC23；源目录hash未变化、账号重登</td>
+</tr>
+<tr>
+<td>T61</td>
+<td>克隆升级MC/Loader、Mod差异与存档保护</td>
+<td>T45/T53/T60</td>
+<td>升级失败原实例仍可用；不自动降级存档</td>
+</tr>
+<tr>
+<td>T62</td>
+<td>完整备份/恢复为新实例、数据根跨卷迁移</td>
+<td>T60/T61</td>
+<td>AC28/23；故障注入可回退</td>
+</tr>
+<tr>
+<td>T63</td>
+<td>schema升级/只读降级/DB损坏恢复、GC并发审计</td>
+<td>T12/T23/T62</td>
+<td>AC24/08；无未知文件误删</td>
+</tr>
+<tr>
+<td>T64</td>
+<td>性能预算、取消/中断长稳回归、100/1000/1万样本</td>
+<td>T35/T57/T63</td>
+<td>AC29；全部恢复安全性通过</td>
+</tr>
+<tr>
+<td>T65</td>
+<td>Win11缩放/高对比/键盘/主题、安装WebView2依赖验证</td>
+<td>T64</td>
+<td>AC30；普通用户干净机完整流程</td>
+</tr>
+<tr>
+<td>T66</td>
+<td>核心覆盖矩阵收口、操作手册、已知限制与本地构建交接</td>
+<td>T60–65</td>
+<td>所有P0/P1 AC通过；范围裁剪需用户明确记录</td>
+</tr>
+</tbody></table>
+<h2>M7 · 后续增强（未授权为当前实现范围）</h2>
+<p>T70：皮肤与披风只读资料/官方入口；T71：本地诊断规则库增强；T72：AI提供商/成本/发送预览与逐次授权；T73：性能与存储策略优化。每项新建独立PRD/ADR/AC，不修改核心安全门。AI输出仅建议，不能自动操作文件或账号。</p>
+<h2>关键路径与阶段内分工建议</h2>
+<p>T00→T06→T10/T12→T13/T14→T20/T21/T22→T25/T26→T30/T32/T33→T35。认证接入可在M0起并行等候，但M3不能跳过。UI工作可用带版本的DTO fixture先行；不得让mock完成态泄漏到真实构建。</p>
+<p>可给后续agent的任务范围示例：A负责领域解析与fixture；B负责队列/文件事务；C负责React与无障碍；集成负责人持有schema/IPC/ADR，按阶段合并并审查。此处仅为未来分工建议，不表示本次已启动agents。</p>
+<h2>可直接交给下一个agent的首条任务</h2>
+<blockquote>
+<p>阅读本包README、AGENTS.md与全部规格。先执行M0，仅做Windows环境、公开接口、自有登录接入和Loader安装风险验证；建立证据与差异记录。不要直接铺开全部产品功能。不得将HTML演示数据作为真实配置，不能借用其他启动器client ID。完成后按交接模板报告T00–T06、阻塞和进入M1所需条件。</p>
+</blockquote>
+<h2>v2.0补充交付要求（不新增并行产品任务）</h2>
+<table>
+<thead>
+<tr>
+<th>原任务</th>
+<th>新增明确输出</th>
+<th>追加验收</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T00/T06</td>
+<td>冻结12份规格、65命令与38组UI操作；给出字段/枚举/表索引映射，记录基础门/认证门</td>
+<td>设计差异为零或有ADR</td>
+</tr>
+<tr>
+<td>T11/T15</td>
+<td>统一视觉令牌；设置跨分类草稿与离页保护；所有页面目标UUID</td>
+<td>AC38/40</td>
+</tr>
+<tr>
+<td>T12/T14/T21</td>
+<td>TaskExecution/OperationJournal/IdempotencyReceipt；事件水位握手、进度seq</td>
+<td>AC31/32</td>
+</tr>
+<tr>
+<td>T22–26</td>
+<td>未知空间预算、双提交、路径授权过期、运行/写锁</td>
+<td>AC33/36/37</td>
+</tr>
+<tr>
+<td>T30/T31/T34</td>
+<td>DPAPI保存/移除失败与活动账号引用；导出重预览</td>
+<td>AC34</td>
+</tr>
+<tr>
+<td>T50/T53/T57</td>
+<td>目标实例一致性、内容启停也走计划与提交</td>
+<td>AC35</td>
+</tr>
+<tr>
+<td>T60–63</td>
+<td>导入/克隆/备份/回收/永久清理/迁移闭环，逐文件journal恢复矩阵</td>
+<td>AC39</td>
+</tr>
+<tr>
+<td>T65/T66</td>
+<td>09视觉冻结、12所有UI-ID覆盖报告、AC01–40状态与证据</td>
+<td>AC40及全量适用AC</td>
+</tr>
+</tbody></table>
+<p>每个任务不得把“待实现”“仅原型展示”改成通过；实现报告按UI-ID和规范命令可定位到具体模块。未经用户明确授权仍只交付设计。M7不扩展当前65个命令。</p>
+</section><section class="doc" id="doc-11"><h1>实施契约与一致性决策</h1>
+<p>基线2.0 / contract_version=1 / schema_version=1。这里是设计协议与数据字典，<strong>不是已经生成的后端、SDK或数据库代码</strong>。补齐1.0中会导致不同agent实现分叉的默认值、接口与恢复判定。</p>
+<h2>1. 规范优先级与变更</h2>
+<p>用户已确认范围（下载刚需、仅Win11个人用、AI后置）优先。产品名统一为K Launcher，实施与设计保存在同一私有仓库。行为冲突按本文件和12文档的细化决策→01–08原业务约束→原型示例处理；视觉按“设计契约/视觉令牌.json”→09尺寸与状态→HTML视觉参考。契约JSON与本文同级，若发现不一致必须先修正文档，不得自行选一个有利于通过测试的版本。</p>
+<p>冻结文件：命令目录.json（65个规范命令）、页面操作追踪.json（38组用户操作）、视觉令牌.json。未来Rust函数名可用snake_case映射，但对外协议名称不能由各agent重新命名。样例账号/版本/速度/Java辅助函数不是实现规则。</p>
+<p>T06输出《实施基线记录》，包括：设计版本/包SHA256、目标Windows环境、依赖确切版本、65命令到Rust入口映射、每个DTO物理类型映射、SQLite索引/迁移策略、固定MC/Loader/Java样本、开放项与阻塞任务。局部技术选择可自主完成；改变行为、范围或不变量先记录ADR及受影响AC。没有Windows或API批准时如实标阻塞，不替换为“网页能点通”。</p>
+<h2>2. 统一请求、返回与幂等</h2>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>必需字段与含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Request</td>
+<td>contract_version:1；request_id:UUID；payload:命令目录规定的对象；变更命令另有idempotency_key:UUID</td>
+</tr>
+<tr>
+<td>Success</td>
+<td>ok:true；request_id；data:规定DTO；warnings:Issue[]（默认空）</td>
+</tr>
+<tr>
+<td>Failure</td>
+<td>ok:false；request_id；error:ErrorDTO；data不得同时出现</td>
+</tr>
+<tr>
+<td>ErrorDTO</td>
+<td>code:string；phase:string；retryable:boolean；message_key:string；field_errors:FieldError[]；actions:ActionDescriptor[]；correlation_id:UUID；details_redacted:object（白名单字段）；cause_code?:string</td>
+</tr>
+<tr>
+<td>FieldError</td>
+<td>field:白名单字段路径；code:string；message_key:string；constraints:JSON标量对象</td>
+</tr>
+<tr>
+<td>ActionDescriptor</td>
+<td>id:retry/repreview/login/free_space/choose_path/view_log/open_task；enabled:boolean；disabled_reason?:string；target_id?:UUID；不含可执行代码/自由命令/任意URL</td>
+</tr>
+<tr>
+<td>Issue</td>
+<td>code:string；severity:info/warning/blocking；message_key；params:脱敏标量对象；acknowledgement_id?:string</td>
+</tr>
+</tbody></table>
+<p>未知请求字段、未知enum与错误类型直接拒绝，不做宽松类型强转。UUID为带短横线小写字符串；DecimalString为非负十进制整数字符串（零为“0”，无前导零）；金额不适用，本产品无支付。时间为UTC RFC3339。空值明确用null；缺省只用于表格标?且写明默认的字段。所有列表空值为[]。请求总payload≤1MiB，日志不通过命令一次塞入。</p>
+<p>变更mode=mutate必须带幂等key；plan/read/interaction不强制。计划不写游戏文件，允许持久保存短期计划。幂等scope=(当前本地用户,规范命令名)；收据保存canonical payload的SHA256和结果引用。请求字段排序稳定、UTF-8、禁止浮点和NaN；digest字段本身不参与自身摘要。复用key+相同payload返回同结果，即使expected_revision已旧也先命中收据；同key不同payload返回IDEMPOTENCY_CONFLICT。任务存在期间收据不清理，任务归档后至少保留180天；同一次点击的网络重试不能换key。request_id只用于诊断，每次传输可新建。</p>
+<p><strong>计划重复点击</strong>：plan_id只能被commit一次，DB唯一约束。即使用不同idempotency_key重复提交同plan，也返回首次task_id；不同payload/digest则拒绝。canonical digest由Rust生成，React只原样回传。取消后重新安装要生成新plan，不复活旧plan。</p>
+<h2>3. 通用值对象与DTO（所有字段除?外必需）</h2>
+<p>下列语法为逻辑类型描述，不是产品语言代码。数组记[]；字段列表为同一个对象。Page<T>统一为items:T[]、next_cursor:string|null、fetched_at:UTC、stale:boolean。游标绑定查询参数及目标ID，参数变动必须从首页重查；总数可选，不伪造。</p>
+<table>
+<thead>
+<tr>
+<th>值对象</th>
+<th>精确定义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Digest</td>
+<td>algorithm:sha1/sha256/sha512；hex:小写完整hex，对应40/64/128字符</td>
+</tr>
+<tr>
+<td>CapabilityDTO</td>
+<td>action:string（Task限pause/resume/cancel/retry_failed/recover，Run限graceful_stop/force_stop/cancel，Instance限launch/repair/update/delete/clone/backup/open_directory，Account限select/relogin/recheck/remove，Settings限save/migrate/cleanup）；enabled:boolean；disabled_reason:string</td>
+</tr>
+<tr>
+<td>InstanceName</td>
+<td>NFC规范化、去首尾空白、1–64 Unicode scalar，不允许控制字符；同名可存在，目录只用UUID</td>
+</tr>
+<tr>
+<td>RevisionMap</td>
+<td>目标资源ID→DecimalString；新实例无base_revision，必须含root/settings有关revision；不使用display_name作key</td>
+</tr>
+<tr>
+<td>LoaderPin</td>
+<td>kind:fabric/forge/neoforge/quilt；version:string；metadata_snapshot_id:UUID；metadata_digest:Digest</td>
+</tr>
+<tr>
+<td>VersionSelection</td>
+<td>mc_id:string；metadata_snapshot_id:UUID；loader_pin:LoaderPin</td>
+</tr>
+<tr>
+<td>JavaPolicy</td>
+<td>mode:auto/manual；manual_runtime_id:UUID</td>
+</tr>
+<tr>
+<td>PathToken</td>
+<td>opaque string：绑定purpose、root/卷ID、选定路径身份和本地用户；5分钟有效，可多次preview；成功commit后以内部PathGrantID固定任务路径；renderer不能读token含义。既有授权root可用root_id；root_id与root_token严格二选一，后台都验证卷身份，避免每次安装重复弹目录选择器</td>
+</tr>
+<tr>
+<td>Acknowledgement</td>
+<td>issue_id:string；decision:accept_budget/accept_unknown_source/include_optional；value:JSON标量；budget用DecimalString字节；禁止ack绕过hash/TLS/越界/无权益</td>
+</tr>
+<tr>
+<td>InstancePatch</td>
+<td>允许display_name、java_policy、memory_override、window_override、jvm_args；没有MC/Loader/磁盘路径字段；不传字段不改，null覆盖项表示恢复继承</td>
+</tr>
+<tr>
+<td>LaunchOverrides</td>
+<td>window_mode?:windowed/fullscreen；width?:640..7680；height?:480..4320；memory_mib?:整数且符合硬件预算；不接受token/mainClass/classpath</td>
+</tr>
+<tr>
+<td>ContentSelection</td>
+<td>content_id:UUID</td>
+</tr>
+<tr>
+<td>ImportSelection</td>
+<td>source_candidate_id:string；include_saves:boolean；include_screenshots:boolean；include_logs:boolean；shared_paths:string[]（只接受扫描返回ID）；name:InstanceName</td>
+</tr>
+<tr>
+<td>RedactionOptions</td>
+<td>include_environment:boolean；hide_personal_identifiers:boolean；excluded_line_ids:string[]；mandatory_secret_redaction始终true不可传false</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>DTO</th>
+<th>字段与不变量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BootstrapDTO / SyncSnapshotDTO</td>
+<td>settings:SettingsDTO；instances:InstanceSummaryDTO[]；accounts:AccountDTO[]；active_tasks:TaskDTO[]；active_runs:RunDTO[]；selected_instance_id:UUID</td>
+</tr>
+<tr>
+<td>CatalogEntry</td>
+<td>id:string；channel:release/snapshot/old；released_at:UTC</td>
+</tr>
+<tr>
+<td>CatalogPageDTO</td>
+<td>Page<CatalogEntry>；source:string；validated_at:UTC</td>
+</tr>
+<tr>
+<td>LoaderEntry</td>
+<td>pin:LoaderPin；mc_id:string；support:verified/unverified/unsupported；reason:string</td>
+</tr>
+<tr>
+<td>LoaderPageDTO</td>
+<td>Page<LoaderEntry>；mc_id:string；kind:string；不能将不同MC候选复用</td>
+</tr>
+<tr>
+<td>PathGrantDTO</td>
+<td>canceled:boolean；token:PathToken</td>
+</tr>
+<tr>
+<td>PlanDTO</td>
+<td>id:UUID；kind:install/repair/clone/upgrade/delete/restore/content/gc/root_migration/purge/backup/backup_restore/import；digest:Digest(sha256)；base_revisions:RevisionMap；selection:VersionSelection</td>
+</tr>
+<tr>
+<td>PlanStep</td>
+<td>id:string；kind:string；depends_on:string[]；description:string；artifact_refs:UUID[]；可无网络步骤，DAG无环</td>
+</tr>
+<tr>
+<td>ChangeItem</td>
+<td>path_relative:string；operation:add/replace/remove/copy/keep；old_digest/new_digest:Digest</td>
+</tr>
+<tr>
+<td>VolumeBudget</td>
+<td>volume_id:string；missing_download_bytes:DecimalString</td>
+</tr>
+<tr>
+<td>TaskAcceptedDTO</td>
+<td>task_id:UUID；execution_id:UUID；instance_id:UUID</td>
+</tr>
+<tr>
+<td>TaskControlDTO</td>
+<td>task:TaskDTO；accepted:boolean；already_applied:boolean</td>
+</tr>
+<tr>
+<td>TaskDTO</td>
+<td>id:UUID；plan_id:UUID</td>
+</tr>
+<tr>
+<td>ProgressDTO</td>
+<td>execution_id:UUID；progress_seq:DecimalString；bytes_received:DecimalString；bytes_verified:DecimalString；bytes_total:DecimalString</td>
+</tr>
+<tr>
+<td>StepDTO</td>
+<td>id:string；kind:string；state:步骤枚举；attempt:integer；dependencies:string[]；not_before:UTC</td>
+</tr>
+<tr>
+<td>TaskPageDTO</td>
+<td>Page<TaskDTO></td>
+</tr>
+<tr>
+<td>InstanceSummaryDTO</td>
+<td>id:UUID；display_name:InstanceName；revision:DecimalString；status:实例枚举；version:VersionSelection；active_task_id/active_run_id:UUID</td>
+</tr>
+<tr>
+<td>InstanceDTO</td>
+<td>id/root_id:UUID；display_name:InstanceName；revision:DecimalString；status:实例枚举；version:VersionSelection；java_policy:JavaPolicy；memory_effective_mib:integer；memory_source:default/global/instance/run；content_counts:按kind与enabled分组整数；last_played_at:UTC</td>
+</tr>
+<tr>
+<td>InstancePageDTO</td>
+<td>Page<InstanceDTO></td>
+</tr>
+<tr>
+<td>ContentDTO</td>
+<td>id/instance_id:UUID；revision:DecimalString；kind:mod/resourcepack/shaderpack；name/filename:string；enabled:boolean；provider:modrinth/local/unknown；project_id/version_id:string</td>
+</tr>
+<tr>
+<td>ContentPageDTO</td>
+<td>Page<ContentDTO>；instance_id:UUID；instance_revision:DecimalString</td>
+</tr>
+<tr>
+<td>ProjectDTO</td>
+<td>provider:modrinth；id/title:string；description_sanitized:string；icon_asset_ref:string</td>
+</tr>
+<tr>
+<td>ContentVersion</td>
+<td>id:string；mc_ids/loader_kinds:string[]；client_support:required/optional/unsupported/unknown；files:ArtifactDescriptor[]；dependencies:DependencyDescriptor[]</td>
+</tr>
+<tr>
+<td>ArtifactDescriptor</td>
+<td>id:UUID；name:string；size:DecimalString</td>
+</tr>
+<tr>
+<td>DependencyDescriptor</td>
+<td>type:required/optional/incompatible/embedded；project_id/version_id:string</td>
+</tr>
+<tr>
+<td>ProjectPageDTO</td>
+<td>Page<ProjectDTO>；target_instance_id:UUID；候选版本仍需preview递归求解</td>
+</tr>
+<tr>
+<td>AccountDTO</td>
+<td>id:UUID；display_name:string</td>
+</tr>
+<tr>
+<td>AccountPageDTO</td>
+<td>Page<AccountDTO></td>
+</tr>
+<tr>
+<td>SecretStatusDTO</td>
+<td>provider:proxy/curseforge；configured:boolean；canceled:boolean；status:ready/absent/CleanupPending；revision:DecimalString；无引用路径/密文/明文</td>
+</tr>
+<tr>
+<td>AuthConfigurationDTO</td>
+<td>client_id:UUID</td>
+</tr>
+<tr>
+<td>AuthSessionDTO</td>
+<td>id:UUID；state:authorizing/exchanging/checking/ready/failed/canceled/expired；expires_at:UTC；account_id:UUID</td>
+</tr>
+<tr>
+<td>LaunchPreflightDTO</td>
+<td>id:UUID；digest:Digest；instance_id/account_id:UUID；base_revisions:RevisionMap；effective_runtime_id:UUID</td>
+</tr>
+<tr>
+<td>RunAcceptedDTO</td>
+<td>run_id:UUID；state:Preflight/Resolving；revision:DecimalString；replayed:boolean</td>
+</tr>
+<tr>
+<td>RunDTO</td>
+<td>id/instance_id/account_id:UUID；instance_revision:DecimalString；revision:DecimalString；state:Idle/Preflight/RefreshingAuth/Resolving/PreparingNatives/Spawning/Running/Stopping/Exited/Failed/Unknown；started_at/ended_at:UTC</td>
+</tr>
+<tr>
+<td>RunPageDTO</td>
+<td>Page<RunDTO></td>
+</tr>
+<tr>
+<td>LogPageDTO</td>
+<td>run_id:UUID；lines:{id:string,time:UTC</td>
+</tr>
+<tr>
+<td>RuntimeDTO</td>
+<td>id:UUID；major:integer；arch:x64；provider/build:string；managed:boolean；display_path:string；probe_status:valid/invalid/missing；last_probed_at:UTC</td>
+</tr>
+<tr>
+<td>RuntimePageDTO</td>
+<td>Page<RuntimeDTO></td>
+</tr>
+<tr>
+<td>SettingsDTO</td>
+<td>schema_version:1；revision:DecimalString；values:SettingsValues；field_sources:字段路径→default/global；capabilities:CapabilityDTO[]</td>
+</tr>
+<tr>
+<td>SettingsPatch</td>
+<td>SettingsValues字段的部分白名单对象；不接受unknown；data_root迁移只经storage计划，不在save中直接改</td>
+</tr>
+<tr>
+<td>ValidationDTO</td>
+<td>valid:boolean；field_errors:FieldError[]；effective_values:SettingsValues；warnings:Issue[]</td>
+</tr>
+<tr>
+<td>StorageDTO</td>
+<td>roots:{id:UUID,display_path:string,available_bytes:DecimalString,managed_bytes:DecimalString,status:online/offline/readonly}[]；cache_bytes:DecimalString；gc_candidate_bytes:DecimalString；revision:DecimalString</td>
+</tr>
+<tr>
+<td>DeletionDTO</td>
+<td>id/instance_id:UUID；name:string；deleted_at/expires_at:UTC；bytes:DecimalString；contains_saves:boolean；status:available/missing/conflicted；revision:DecimalString</td>
+</tr>
+<tr>
+<td>DeletionPageDTO</td>
+<td>Page<DeletionDTO></td>
+</tr>
+<tr>
+<td>ImportScanDTO</td>
+<td>task_id:UUID；state:TaskState；candidates:{id:string,name:string,version:VersionSelection</td>
+</tr>
+<tr>
+<td>ExportPreviewDTO</td>
+<td>id:UUID；digest:Digest；run_id:UUID；preview_lines:LogPageDTO；files:{name:string,bytes:DecimalString}[]；warnings:Issue[]；expires_at:UTC</td>
+</tr>
+<tr>
+<td>ExitPlanDTO</td>
+<td>id:UUID；digest:Digest；active_tasks:UUID[]；active_runs:UUID[]；committing_tasks:UUID[]；can_exit_now:boolean；expires_at:UTC（30秒）</td>
+</tr>
+<tr>
+<td>AcceptedDTO</td>
+<td>accepted:boolean；already_finished:boolean；revision:DecimalString</td>
+</tr>
+<tr>
+<td>EventPageDTO</td>
+<td>events:EventDTO[]；next_cursor:DecimalString；has_more:boolean；high_watermark:DecimalString</td>
+</tr>
+<tr>
+<td>EventDTO</td>
+<td>event_id:DecimalString；entity_id:UUID；entity_revision:DecimalString；kind:string；occurred_at:UTC；contract_version:1；payload:DTO快照或需重拉的ID；不得含自由执行指令</td>
+</tr>
+</tbody></table>
+<h2>4. 设置的唯一字段与默认值</h2>
+<p>SettingsValues的白名单如下。UI“保存更改”保存整个草稿patch；切换二级分类不提交、不丢草稿。离开设置时有未保存项显示“保存并离开 / 放弃更改 / 继续编辑”；保存失败停留。主题允许即时预览，放弃时恢复已保存值。</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>默认 / 范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>theme</td>
+<td>system；system/light/dark</td>
+</tr>
+<tr>
+<td>language</td>
+<td>zh-CN；v1不可切换</td>
+</tr>
+<tr>
+<td>start_page</td>
+<td>home；home/instances</td>
+</tr>
+<tr>
+<td>reduce_motion</td>
+<td>system；system/on/off</td>
+</tr>
+<tr>
+<td>ui_scale_percent</td>
+<td>100；100/125/150/200，与OS缩放叠加时测试可用DIP</td>
+</tr>
+<tr>
+<td>java_policy</td>
+<td>auto；指定runtime需probe有效</td>
+</tr>
+<tr>
+<td>memory_mib</td>
+<td>根据03硬件预算取≤4096并向下到256倍数；范围≥512且≤预算</td>
+</tr>
+<tr>
+<td>xms_mib</td>
+<td>512；256步进，≤memory_mib</td>
+</tr>
+<tr>
+<td>window_mode/width/height</td>
+<td>windowed / 1280 / 720；尺寸范围见LaunchOverrides</td>
+</tr>
+<tr>
+<td>download_concurrency/per_host</td>
+<td>8 / 4；1..16 / 1..8且per_host≤总量</td>
+</tr>
+<tr>
+<td>download_limit_mibps</td>
+<td>0；整数0..1024；0不限速，换算字节在Rust</td>
+</tr>
+<tr>
+<td>source_policy</td>
+<td>official_only；official_only/official_then_configured_mirror；未配置镜像不能选择后者</td>
+</tr>
+<tr>
+<td>proxy_mode / proxy_url</td>
+<td>system / null；system/direct/custom；custom时proxy_url必需，仅允许http/https主机端口，不含userinfo；认证/内容默认共用此配置；secret由connection.configure_secret原生输入</td>
+</tr>
+<tr>
+<td>close_behavior</td>
+<td>ask；ask/save_and_exit（提交中均必须等候）</td>
+</tr>
+<tr>
+<td>keep_game_running_on_exit</td>
+<td>true；false也需安全停止提示，不直接杀进程</td>
+</tr>
+<tr>
+<td>cache_budget_gib</td>
+<td>20；整数1..1024；预算只针对可重建缓存，引用对象超预算时告知、不强删</td>
+</tr>
+<tr>
+<td>logs_days/logs_budget_mib</td>
+<td>30 / 500；1..180 / 50..4096；清理受管日志副本</td>
+</tr>
+<tr>
+<td>trash_min_days</td>
+<td>7；v1固定；到期进入可清理列表，存档不自动销毁</td>
+</tr>
+<tr>
+<td>automatic_small_repair</td>
+<td>false；v1仅保留禁用的未来选项，不实现无确认后台修复</td>
+</tr>
+</tbody></table>
+<p>内存预算按总物理RAM预留max(2048MiB,25%总RAM)，可用内存只作即时警告，不在每次读取设置时反复改存储值。预算不足512MiB阻断启动。若安装器另需Java，记录processor_runtime和game_runtime两个选择，不能强行一个major同时满足。</p>
+<h2>5. Task / execution与资源锁</h2>
+<p>Task枚举：Queued、Running、Pausing、Paused、Retrying、Verifying、Installing、Committing、NeedsAction、Interrupted、Canceling、Succeeded、Failed、Canceled。Planned属于Plan，永远不是已提交Task。</p>
+<p>TaskExecution：Active→Succeeded/Failed/Canceled/Interrupted；每Task最多一个Active；旧记录终态不可改。Paused/Retrying仍处于同一Active execution；应用崩溃记Interrupted结束旧execution，恢复时创建新execution并保留恢复来源ID。只有在重启审计确认旧execution实际上已完成提交时，将其结果记入恢复审计记录并展示任务Succeeded，不能删除或改写中断历史。retry_failed仅Failed可用，新execution.ordinal+1，重新获取实例mutation lease并检查原plan内容与base_revision；复用已验证对象，不改变固定版本。输入变化/计划需调整返回REPLAN_REQUIRED而非偷偷改计划。Canceled/Succeeded只能重新preview为新任务。Interrupted先按journal审计：确定已commit则补Finalized且执行完成；未commit可回滚或基于原计划继续；无法判断转NeedsAction。</p>
+<p>Capabilities：Queued可pause/cancel；Running可pause/cancel；Pausing只cancel；Paused可resume/cancel；Retrying可pause/cancel；Verifying仅cancel；Installing在适配器safe_point可pause/cancel，否则只显示请求待停点；Committing无动作；NeedsAction可对应resolve/recheck及cancel；Interrupted可recover/cancel（先审计）；Failed可retry_failed；Succeeded/Canceled只读。pause/retry多击通过revision+幂等处理，不切换成相反动作。</p>
+<p>锁顺序固定：全局maintenance→DataRoot→Instance（UUID排序）→Artifact（digest排序）。不可持DB写事务等网络/进程。实例mutation lease在接受有实例写意图的plan时持久获取；活动运行与它互斥；暂停任务继续占用，UI提供取消释放。Failed须已安全回滚才释放，现场未知为NeedsAction继续阻止启动。跨实例纯缓存下载按对象单写lease共享，取消一个订阅不影响其他订阅。租约续期5秒、过期30秒；应用单实例互斥锁先防重复宿主，启动恢复检查宿主身份，<strong>不能因30秒到期就覆盖仍在运行的Java/处理器输出</strong>。系统睡眠与时钟回拨后先审计。</p>
+<p>run身份无法验证时Run=Unknown，保留阻塞性占用；用户只能重新探测/查看指引，不能直接“解除锁并覆盖”。在确认对应进程已退出后才能释放。账号移除如被活动run引用则返回ACCOUNT_IN_USE，保留secret到安全移除。</p>
+<h2>6. 事件协议与重连</h2>
+<p>持久Event仅记录状态、配置与终结结果；状态与事件在同一DB事务提交。全局event_id递增，但SQLite分配可能不连续，<strong>不依靠数值+1判断是否丢失</strong>。events.read从after_cursor取实际记录，以next_cursor作为消费水位。无过滤接口，前端接收后按实体分发；分页拿到has_more=false才追平high_watermark。</p>
+<p>握手：先注册实时通知并缓冲→sync.snapshot获取同一读事务快照和cursor C→应用快照→events.read(after=C)补齐→按event_id去重处理缓冲→进入通知驱动补拉。订阅通知只做唤醒，5秒低频补拉兜底；前端隐藏时30秒，回到前台立即同步。保留事件7天且最多100000条，裁剪前保留低水位；太旧返回CURSOR_EXPIRED并重做握手。bootstrap只提供前200实例摘要，sync.snapshot则为所有实体返回最小revision索引及活动实体DTO，最大10000实例/1000活动任务，超过返回SNAPSHOT_LIMIT而非静默裁剪；完整列表详情用instance.list分页，不参与一致性基线。每页instance.list绑定查询版本，如revision索引改变则重新查该实体；不把不同时间分页称为原子快照。snapshot_id用于诊断，不依赖未定义的快照分页接口。</p>
+<p>progress通知不写Event表、不提升entity_revision；带task_id、execution_id、progress_seq。相同execution仅接受更大seq；execution切换清掉旧进度。断线时progress来自TaskDTO checkpoint，进度允许回到最后落盘边界，不能把UI曾显示字节当已验证。通知发送4Hz上限；仅bytes_total已知才算百分比，进度100%仍可处于Verifying/Installing。</p>
+<h2>7. 文件提交与崩溃恢复判定</h2>
+<p>journal不是一次目录rename的假设。提交前完成全量计划路径预审、锁与目标指纹校验；manifest为每个entry保存old/new digest、staged/backup/target相对位置、动作与完成标记。journal每个步骤持久化并刷新；单文件替换可原子，不声称多个文件整体原子。游戏和其他写任务由lease隔离期间不可见中间态。</p>
+<table>
+<thead>
+<tr>
+<th>检测到的事实</th>
+<th>恢复决定</th>
+<th>实例状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Prepared/FilesStaged，DB仍base_revision，目标旧digest匹配</td>
+<td>清理/保留staging，原实例不变；可重新执行</td>
+<td>原Ready或新Draft</td>
+</tr>
+<tr>
+<td>部分FilesSwapped，DB仍base_revision，目标为已知new或old、backup完整</td>
+<td>按manifest逆序恢复old，验证全部；原计划可重试</td>
+<td>回滚完成后原状态</td>
+</tr>
+<tr>
+<td>FilesSwapped完成，DB仍base_revision且所有新文件匹配</td>
+<td>默认回滚；只有用户明确“继续恢复”且原计划有效才提交DB</td>
+<td>审计中不可启动</td>
+</tr>
+<tr>
+<td>DB=target_revision、commit标记已落盘，投影缺失</td>
+<td>根据DB补lock与Finalized；不得回退已确认revision</td>
+<td>完成后Ready</td>
+</tr>
+<tr>
+<td>DB为其他revision，或任何target/backup与记录两种digest均不符</td>
+<td>保留所有副本，停止自动恢复，记录文件级冲突</td>
+<td>RepairRequired</td>
+</tr>
+<tr>
+<td>中断发生在root迁移</td>
+<td>DB root指向旧根则继续旧根；指向新根则验证新根并补投影；两端不完整则只读</td>
+<td>不能仅按盘符切换</td>
+</tr>
+</tbody></table>
+<p>删除/restore/purge/GC/备份恢复也使用有kind的journal；永久purge没有文件回滚承诺，因此先确认无引用并只删清单中的准确对象，失败可重试剩余项。GC quarantine24h后重新mark；存档不进入cache GC。可回滚的旧Mod位于操作rollback目录，直到事务Finalized后进入保留7天的内容回收记录，不与用户实例删除混为一条Deletion。</p>
+<h2>8. 错误分类与禁止的降级</h2>
+<p>03/05的错误继续有效；下列补齐协议类错误。任何ErrorDTO.actions只允许枚举中的安全意图，由UI映射相应命令。</p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>retryable / 恢复</th>
+<th>不得做</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CONTRACT_UNSUPPORTED / VALIDATION_FAILED</td>
+<td>false；升级协议或修正字段</td>
+<td>静默忽略未知字段</td>
+</tr>
+<tr>
+<td>IDEMPOTENCY_CONFLICT</td>
+<td>false；核对用户意图后新key</td>
+<td>覆盖原收据</td>
+</tr>
+<tr>
+<td>REVISION_CONFLICT</td>
+<td>false；保留草稿、重拉快照、重新预览</td>
+<td>盲重试覆盖</td>
+</tr>
+<tr>
+<td>PLAN_EXPIRED / PLAN_DIGEST_MISMATCH / REPLAN_REQUIRED</td>
+<td>false；重新预览确认</td>
+<td>后端修改原计划继续</td>
+</tr>
+<tr>
+<td>PATH_GRANT_EXPIRED / PATH_IDENTITY_CHANGED</td>
+<td>false；重新选择授权路径</td>
+<td>根据display_path继续</td>
+</tr>
+<tr>
+<td>INSTANCE_BUSY / ROOT_MAINTENANCE / ACCOUNT_IN_USE</td>
+<td>false；链接占用者、等待完成或取消自己的任务</td>
+<td>强制解锁/杀未知进程</td>
+</tr>
+<tr>
+<td>CURSOR_EXPIRED</td>
+<td>true；重做快照握手</td>
+<td>清空用户数据</td>
+</tr>
+<tr>
+<td>SNAPSHOT_LIMIT</td>
+<td>false；保留数据，按ADR评估增加容量或分区协议</td>
+<td>静默裁剪一致性基线</td>
+</tr>
+<tr>
+<td>SPACE_ESTIMATE_INCOMPLETE</td>
+<td>false；确认固定预算并重预览</td>
+<td>unknown当0</td>
+</tr>
+<tr>
+<td>SECRET_PERSIST_FAILED / SECRET_DELETE_FAILED</td>
+<td>由用户重试；账号显示不完整持久化/CleanupPending</td>
+<td>说已安全登录/完全移除</td>
+</tr>
+<tr>
+<td>SOURCE_CHANGED / INSTANCE_EXTERNAL_CHANGE</td>
+<td>false；重新扫描与差异确认</td>
+<td>覆盖外部新文件</td>
+</tr>
+<tr>
+<td>AUTH_INTEGRATION_UNAVAILABLE</td>
+<td>false；M0接入门待解决</td>
+<td>借用其他启动器身份或伪成功</td>
+</tr>
+</tbody></table>
+<h2>9. Agent集成与阶段门</h2>
+<p>每一阶段先交接“本阶段输入/输出/不可变字段/AC列表”；UI实现与Rust实现使用同一命令目录和版本化fixture。fixture只能存无秘密的合成/裁剪数据，必须标记来源与checked_at；真实运行配置不得静默落回fixture。</p>
+<p>实现者不能仅复制HTML及其内存逻辑。必须先将语义token映射为React组件，再按UI-ID接真实DTO；page/module owner不拥有改变协议的权力。每次完成必须交付成功、失败、取消/重启的证据及未通过项。无法满足现有契约时先提交设计差异，不通过删按钮、取消下载、吞错误、忽略hash或返回fake Ready来绕过。</p>
+<p>基础门允许独立实现继续，认证门只阻塞依赖它的链路；这不是把认证标记已验收。M6收口必须AC01–40全部适用项通过。Quilt/旧版专项若未通过保持unverified；“核心承诺”仍为PRD的L1/L2，L3/L4不是新默认承诺。</p>
+<h2>10. 事件种类与负载白名单</h2>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>payload</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>task.state_changed</td>
+<td>TaskDTO（list摘要，不包含全部steps）；步骤详情按task.get取</td>
+</tr>
+<tr>
+<td>instance.changed</td>
+<td>InstanceSummaryDTO；详情失效后按instance.get取</td>
+</tr>
+<tr>
+<td>account.status_changed</td>
+<td>AccountDTO；无credential引用</td>
+</tr>
+<tr>
+<td>settings.changed</td>
+<td>SettingsDTO；无proxy secret</td>
+</tr>
+<tr>
+<td>run.state_changed / run.exited</td>
+<td>RunDTO</td>
+</tr>
+<tr>
+<td>run.output_available</td>
+<td>run_id:UUID、last_log_cursor:string；日志按页读取</td>
+</tr>
+<tr>
+<td>storage.warning</td>
+<td>root_id:UUID、issue:Issue；不发送任意路径写命令</td>
+</tr>
+<tr>
+<td>task.progress（非持久通知）</td>
+<td>task_id:UUID、ProgressDTO；不写Event表，无event_id</td>
+</tr>
+</tbody></table>
+<p>未知事件kind忽略显示并触发相关快照刷新，不能导致默认成功。page游标保留读快照所需条件；HTTP数据仅经Provider适配器解析，不使用此本地事件总线执行上游命令。</p>
+<h2>11. 命令目录展开表</h2>
+<p>由设计契约/命令目录.json同步，所有请求另带第2节envelope。表中可选字段以?标记；返回DTO在第3节定义。interaction只用于原生选择/探测，mutate必须幂等。</p>
+<table>
+<thead>
+<tr>
+<th>规范命令</th>
+<th>模式</th>
+<th>payload字段</th>
+<th>返回</th>
+<th>约束</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bootstrap</td>
+<td>read</td>
+<td>无</td>
+<td>BootstrapDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>sync.snapshot</td>
+<td>read</td>
+<td>无</td>
+<td>SyncSnapshotDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>events.read</td>
+<td>read</td>
+<td>after_cursor: DecimalString；limit?: integer 1..200; default 100</td>
+<td>EventPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>catalog.list</td>
+<td>read</td>
+<td>channel: release / snapshot / old；query?: string &lt;=256; default empty；cursor?: opaque string；refresh?: boolean; default false</td>
+<td>CatalogPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>loader.list</td>
+<td>read</td>
+<td>mc_id: string；kind: fabric / forge / neoforge / quilt</td>
+<td>LoaderPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>path.pick</td>
+<td>interaction</td>
+<td>purpose: data_root / import_source / content_file / java_executable / backup_source / export_target</td>
+<td>PathGrantDTO</td>
+<td>只允许系统选择器；取消返回canceled=true</td>
+</tr>
+<tr>
+<td>install.preview</td>
+<td>plan</td>
+<td>mc_id: string；loader_pin?: LoaderPin；name: InstanceName；java_policy: JavaPolicy；acknowledgements: Acknowledgement[]; default []；root_id?: UUID of previously authorized DataRoot; XOR root_token；root_token?: PathToken for newly selected root; XOR root_id</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>install.commit</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>计划kind=install；plan未过期；root可写；无blocking issue</td>
+</tr>
+<tr>
+<td>plan.get</td>
+<td>read</td>
+<td>plan_id: UUID</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>task.list</td>
+<td>read</td>
+<td>filter: active / attention / done / all；cursor?: opaque string</td>
+<td>TaskPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>task.get</td>
+<td>read</td>
+<td>task_id: UUID</td>
+<td>TaskDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>task.control</td>
+<td>mutate</td>
+<td>task_id: UUID；action: pause / resume / cancel / retry_failed / recover；expected_revision: DecimalString</td>
+<td>TaskControlDTO</td>
+<td>合法状态；后端返回capabilities；retry_failed新增execution</td>
+</tr>
+<tr>
+<td>instance.list</td>
+<td>read</td>
+<td>query?: string &lt;=256；include_trashed?: boolean default false；cursor?: opaque string</td>
+<td>InstancePageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>instance.get</td>
+<td>read</td>
+<td>instance_id: UUID</td>
+<td>InstanceDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>instance.update</td>
+<td>mutate</td>
+<td>instance_id: UUID；expected_revision: DecimalString；patch: InstancePatch</td>
+<td>InstanceDTO</td>
+<td>仅名称/启动配置白名单；运行配置写入需无运行/写lease</td>
+</tr>
+<tr>
+<td>instance.repair_preview</td>
+<td>plan</td>
+<td>instance_id: UUID；scope: required_components</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>instance.clone_preview</td>
+<td>plan</td>
+<td>instance_id: UUID；name: InstanceName；include_saves: boolean；target?: VersionSelection</td>
+<td>PlanDTO</td>
+<td>不传target为原版本克隆；有target为克隆升级；原实例停止</td>
+</tr>
+<tr>
+<td>instance.delete_preview</td>
+<td>plan</td>
+<td>instance_id: UUID</td>
+<td>PlanDTO</td>
+<td>含存档数量/大小；显示回收7天，无永久删除快捷操作</td>
+</tr>
+<tr>
+<td>instance.restore_preview</td>
+<td>plan</td>
+<td>deletion_id: UUID</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>instance.commit</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>kind限定repair / clone / upgrade / delete / restore</td>
+</tr>
+<tr>
+<td>shell.open_instance_directory</td>
+<td>interaction</td>
+<td>instance_id: UUID；area: game / saves / runs</td>
+<td>AcceptedDTO</td>
+<td>Rust查目录；不接收URL/绝对路径/命令</td>
+</tr>
+<tr>
+<td>content.list</td>
+<td>read</td>
+<td>instance_id: UUID；kind: mod / resourcepack / shaderpack；query?: string &lt;=256；cursor?: opaque string</td>
+<td>ContentPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>content.search</td>
+<td>read</td>
+<td>instance_id: UUID；kind: mod / resourcepack / shaderpack；query: string &lt;=256；cursor?: opaque string</td>
+<td>ProjectPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>content.project</td>
+<td>read</td>
+<td>instance_id: UUID；provider: modrinth；project_id: string</td>
+<td>ProjectDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>content.preview_change</td>
+<td>plan</td>
+<td>instance_id: UUID；action: install / update / enable / disable / remove / local_add；selection: ContentSelection[]；optional_version_ids: string[]; default []</td>
+<td>PlanDTO</td>
+<td>必需依赖自动纳入；禁用/删除影响依赖需blocking issue</td>
+</tr>
+<tr>
+<td>content.commit_change</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>kind=content；目标无运行/写lease</td>
+</tr>
+<tr>
+<td>account.list</td>
+<td>read</td>
+<td>无</td>
+<td>AccountPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>account.begin</td>
+<td>mutate</td>
+<td>account_id?: UUID; 缺省为添加；method: pkce / device_code</td>
+<td>AuthSessionDTO</td>
+<td>自有client与grant通过接入门；secret不返回</td>
+</tr>
+<tr>
+<td>account.cancel</td>
+<td>mutate</td>
+<td>session_id: UUID</td>
+<td>AcceptedDTO</td>
+<td>会话归当前用户；终态取消返回already_finished</td>
+</tr>
+<tr>
+<td>account.select</td>
+<td>mutate</td>
+<td>account_id: UUID；expected_revision: DecimalString</td>
+<td>AccountDTO</td>
+<td>不改变已创建RunSession绑定账号</td>
+</tr>
+<tr>
+<td>account.remove</td>
+<td>mutate</td>
+<td>account_id: UUID；expected_revision: DecimalString；confirmed: boolean must true</td>
+<td>AccountDTO</td>
+<td>活动启动/运行引用时阻断；secret删除失败返回CleanupPending</td>
+</tr>
+<tr>
+<td>account.recheck</td>
+<td>mutate</td>
+<td>account_id: UUID</td>
+<td>AccountDTO</td>
+<td>singleflight；不无限刷新</td>
+</tr>
+<tr>
+<td>launch.preview</td>
+<td>plan</td>
+<td>instance_id: UUID；account_id: UUID；overrides: LaunchOverrides</td>
+<td>LaunchPreflightDTO</td>
+<td>只读检查；缺文件返回repair建议，不能自动下载</td>
+</tr>
+<tr>
+<td>launch.start</td>
+<td>mutate</td>
+<td>preflight_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>RunAcceptedDTO</td>
+<td>预检60秒内且未变；Rust再次校验并获取运行lease</td>
+</tr>
+<tr>
+<td>launch.cancel</td>
+<td>mutate</td>
+<td>run_id: UUID；expected_revision: DecimalString</td>
+<td>AcceptedDTO</td>
+<td>仅预检/启动过程；spawn竞态只停止本次run</td>
+</tr>
+<tr>
+<td>run.get</td>
+<td>read</td>
+<td>run_id: UUID</td>
+<td>RunDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>run.stop</td>
+<td>mutate</td>
+<td>run_id: UUID；mode: graceful / force；expected_revision: DecimalString</td>
+<td>AcceptedDTO</td>
+<td>force需独立确认；Windows身份匹配才结束</td>
+</tr>
+<tr>
+<td>run.list</td>
+<td>read</td>
+<td>instance_id?: UUID；cursor?: opaque string</td>
+<td>RunPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>run.log_page</td>
+<td>read</td>
+<td>run_id: UUID；cursor?: opaque string；level: all / warn_error；query?: string &lt;=256</td>
+<td>LogPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>runtime.list</td>
+<td>read</td>
+<td>无</td>
+<td>RuntimePageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>runtime.probe</td>
+<td>interaction</td>
+<td>path_token?: PathToken; 缺省重新探测已登记runtime</td>
+<td>RuntimePageDTO</td>
+<td>无扫描整个硬盘；探测超时5秒</td>
+</tr>
+<tr>
+<td>settings.get</td>
+<td>read</td>
+<td>无</td>
+<td>SettingsDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>settings.validate</td>
+<td>read</td>
+<td>patch: SettingsPatch</td>
+<td>ValidationDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>settings.save</td>
+<td>mutate</td>
+<td>patch: SettingsPatch；expected_revision: DecimalString</td>
+<td>SettingsDTO</td>
+<td>字段验证通过；导出失败为projection_warning，DB值为准</td>
+</tr>
+<tr>
+<td>storage.inspect</td>
+<td>read</td>
+<td>无</td>
+<td>StorageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>storage.cleanup_preview</td>
+<td>plan</td>
+<td>无</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>storage.migrate_preview</td>
+<td>plan</td>
+<td>target_root_token: PathToken</td>
+<td>PlanDTO</td>
+<td>冻结所有写操作与运行会话后可commit</td>
+</tr>
+<tr>
+<td>storage.commit</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>kind=gc / root_migration；全局维护lease</td>
+</tr>
+<tr>
+<td>trash.list</td>
+<td>read</td>
+<td>cursor?: opaque string</td>
+<td>DeletionPageDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>trash.purge_preview</td>
+<td>plan</td>
+<td>deletion_ids: UUID[]</td>
+<td>PlanDTO</td>
+<td>到期也不自动清理存档；列出完整范围</td>
+</tr>
+<tr>
+<td>trash.commit_purge</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap；confirmation_text: string must 永久删除</td>
+<td>TaskAcceptedDTO</td>
+<td>kind=purge；无回退引用</td>
+</tr>
+<tr>
+<td>backup.preview</td>
+<td>plan</td>
+<td>instance_id: UUID；kind: config / manifest / full；target_token: PathToken</td>
+<td>PlanDTO</td>
+<td>full要求游戏退出</td>
+</tr>
+<tr>
+<td>backup.restore_preview</td>
+<td>plan</td>
+<td>source_token: PathToken；name: InstanceName；root_id?: UUID of previously authorized DataRoot; XOR root_token；root_token?: PathToken for newly selected root; XOR root_id</td>
+<td>PlanDTO</td>
+<td>v1仅恢复为新实例；不提供覆盖当前实例选项</td>
+</tr>
+<tr>
+<td>backup.commit</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>kind=backup / backup_restore</td>
+</tr>
+<tr>
+<td>import.scan</td>
+<td>mutate</td>
+<td>source_token: PathToken</td>
+<td>TaskAcceptedDTO</td>
+<td>scan为只读后台任务；结果通过import.get读取</td>
+</tr>
+<tr>
+<td>import.get</td>
+<td>read</td>
+<td>scan_task_id: UUID</td>
+<td>ImportScanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>import.preview</td>
+<td>plan</td>
+<td>scan_task_id: UUID；selections: ImportSelection[]；root_id?: UUID of previously authorized DataRoot; XOR root_token；root_token?: PathToken for newly selected root; XOR root_id</td>
+<td>PlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>import.commit</td>
+<td>mutate</td>
+<td>plan_id: UUID；digest: Digest；expected_revisions: RevisionMap</td>
+<td>TaskAcceptedDTO</td>
+<td>kind=import；源指纹复核；只复制</td>
+</tr>
+<tr>
+<td>diagnostics.export_preview</td>
+<td>plan</td>
+<td>run_id: UUID；options: RedactionOptions</td>
+<td>ExportPreviewDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>diagnostics.export_commit</td>
+<td>mutate</td>
+<td>preview_id: UUID；digest: Digest；target_token: PathToken</td>
+<td>TaskAcceptedDTO</td>
+<td>mandatory secret redaction无法取消</td>
+</tr>
+<tr>
+<td>app.exit_request</td>
+<td>plan</td>
+<td>无</td>
+<td>ExitPlanDTO</td>
+<td>本地主窗口；contract_version=1</td>
+</tr>
+<tr>
+<td>app.exit_confirm</td>
+<td>mutate</td>
+<td>exit_plan_id: UUID；digest: Digest；keep_game_running: boolean</td>
+<td>AcceptedDTO</td>
+<td>stop scheduling→safe checkpoint；Committing必须等完成</td>
+</tr>
+<tr>
+<td>connection.configure_secret</td>
+<td>mutate</td>
+<td>provider: proxy / curseforge；proxy_endpoint_id?: UUID required if proxy</td>
+<td>SecretStatusDTO</td>
+<td>Rust打开原生凭据输入；renderer不接收secret；取消返回canceled</td>
+</tr>
+<tr>
+<td>connection.remove_secret</td>
+<td>mutate</td>
+<td>provider: proxy / curseforge；proxy_endpoint_id?: UUID required if proxy</td>
+<td>SecretStatusDTO</td>
+<td>无在途请求使用；失败显示CleanupPending，不伪称已清理</td>
+</tr>
+<tr>
+<td>account.configure_client</td>
+<td>mutate</td>
+<td>client_id: UUID public application ID；expected_revision: DecimalString；confirmed_owned_application: boolean must true</td>
+<td>AuthConfigurationDTO</td>
+<td>仅保存用户自有public-client ID；scopes/redirect由M0固定适配器约束，不接受任意认证域名</td>
+</tr>
+</tbody></table>
+</section><section class="doc" id="doc-12"><h1>页面、操作与实现追踪</h1>
+<p>基线2.0。此文由同包“设计契约/页面操作追踪.json”呈现；JSON保留规范命令名，不能把HTML中的演示函数名当Rust接口。每一行均为未来必须实现的闭环；原型列描述当前视觉示意范围，不表示产品功能完成。</p>
+<h2>1. 共同页面契约</h2>
+<ul>
+<li>实例路由由instance_id驱动。首页当前实例、侧栏选择、详情、Mod、日志必须共享同一UUID上下文；显示名仅展示，不用于查找身份。无目标时显示选择实例，绝不静默回退到“远山生存”。</li>
+<li>所有读视图有Loading、Content、Empty、Error、Stale状态；Empty与Error不可共用“没有数据”。已有数据刷新时保留内容，顶部给更新时间与非阻断错误。</li>
+<li>所有变更有Idle、Validating、Preview、Submitting、Accepted或Rejected；Accepted转任务链接，不能直接改成“已安装”。一个用户提交意图沿重试复用同幂等key，修改内容后生成新key。</li>
+<li>危险按钮先显示范围与可恢复性；disabled旁必须有原因，不能只靠hover。进度卡的capabilities来自后端，而不是前端按中文标签猜。</li>
+<li>页内搜索防抖250ms、取消旧请求、按query+instance_id+revision去重；旧请求迟到不能覆盖新目标。表格默认名称升序，任务按创建时间降序，日志按行序升序。每页50，最大200；滚动不无限挂载1000行。</li>
+<li>路由切换只保留用户筛选与草稿；异步数据由快照更新。新页面主标题获得程序化焦点，侧栏保留aria-current。关键结果留在页内，toast只是辅助。</li>
+</ul>
+<h2>2. 操作映射</h2>
+<table>
+<thead>
+<tr>
+<th>ID / 页面</th>
+<th>用户操作</th>
+<th>规范命令</th>
+<th>FR / 任务 / AC</th>
+<th>完成与错误路径</th>
+<th>原型覆盖</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UI-01 / P01</td>
+<td>启动当前实例</td>
+<td>launch.preview；launch.start；launch.cancel</td>
+<td>FR-07 / T35 / AC-11 / AC-25</td>
+<td>预检→运行；登录失效/修复阻断</td>
+<td>预检弹窗→模拟运行</td>
+</tr>
+<tr>
+<td>UI-02 / P01</td>
+<td>当前实例与账号</td>
+<td>instance.list；account.list；account.select</td>
+<td>FR-04 / FR-06 / T35 / AC-35</td>
+<td>切换只影响后续运行；顶部保留目标</td>
+<td>实例/账号摘要</td>
+</tr>
+<tr>
+<td>UI-03 / P01</td>
+<td>打开安装/下载</td>
+<td>catalog.list；task.list</td>
+<td>FR-02 / FR-08 / T26 / AC-02</td>
+<td>导航保留进行中任务</td>
+<td>导航与摘要联动</td>
+</tr>
+<tr>
+<td>UI-04 / P02</td>
+<td>列表/搜索/选择实例</td>
+<td>instance.list；instance.get</td>
+<td>FR-04 / T26 / AC-35</td>
+<td>稳定UUID路由；空态/无结果分开</td>
+<td>列表与选择</td>
+</tr>
+<tr>
+<td>UI-05 / P02</td>
+<td>导入目录/整合包</td>
+<td>path.pick；import.scan；import.get；import.preview；import.commit</td>
+<td>FR-12 / FR-13 / T54 / T60 / AC-18 / AC-23</td>
+<td>扫描→选择→差异→固定计划→任务</td>
+<td>扫描后摘要弹窗</td>
+</tr>
+<tr>
+<td>UI-06 / P03</td>
+<td>版本目录/刷新/搜索</td>
+<td>catalog.list</td>
+<td>FR-02 / T20 / T26 / AC-02</td>
+<td>加载/失败/过期缓存/空；实验主动开启</td>
+<td>目录样例切换</td>
+</tr>
+<tr>
+<td>UI-07 / P03</td>
+<td>Loader候选与构建</td>
+<td>loader.list</td>
+<td>FR-09 / T45 / AC-12</td>
+<td>固定构建；Unknown和Unsupported阻断</td>
+<td>构建字段/兼容说明</td>
+</tr>
+<tr>
+<td>UI-08 / P03</td>
+<td>名称/目标/Java/空间</td>
+<td>path.pick；runtime.list；install.preview</td>
+<td>FR-01 / FR-05 / T24 / T26 / AC-01 / AC-10 / AC-36</td>
+<td>逐字段验证；未知空间需预算重预览</td>
+<td>字段与摘要</td>
+</tr>
+<tr>
+<td>UI-09 / P03</td>
+<td>预览并确认安装</td>
+<td>install.preview；install.commit；plan.get</td>
+<td>FR-03 / FR-08 / T25 / T26 / AC-06 / AC-37</td>
+<td>新预览摘要；单幂等key；过期重预览</td>
+<td>确认→模拟队列</td>
+</tr>
+<tr>
+<td>UI-10 / P04</td>
+<td>重命名/实例参数</td>
+<td>instance.get；instance.update</td>
+<td>FR-04 / FR-14 / T27 / T35 / AC-09 / AC-38</td>
+<td>revision冲突保留草稿；继承值显式</td>
+<td>重命名/参数预览</td>
+</tr>
+<tr>
+<td>UI-11 / P04</td>
+<td>打开管理目录</td>
+<td>shell.open_instance_directory</td>
+<td>FR-04 / T27 / AC-22</td>
+<td>允许的子目录枚举；缺失报错</td>
+<td>路径说明弹窗</td>
+</tr>
+<tr>
+<td>UI-12 / P04</td>
+<td>校验修复</td>
+<td>instance.repair_preview；instance.commit</td>
+<td>FR-03 / T27 / AC-09</td>
+<td>先扫描摘要；不动用户内容</td>
+<td>修复计划弹窗</td>
+</tr>
+<tr>
+<td>UI-13 / P04</td>
+<td>克隆/克隆升级</td>
+<td>instance.clone_preview；instance.commit</td>
+<td>FR-15 / T61 / AC-39</td>
+<td>选择是否含存档；无兼容解不可提交</td>
+<td>目标与差异预览</td>
+</tr>
+<tr>
+<td>UI-14 / P04</td>
+<td>删除至回收站</td>
+<td>instance.delete_preview；instance.commit</td>
+<td>FR-04 / T27 / AC-09 / AC-33</td>
+<td>含存档范围；占用阻断；状态Trashed</td>
+<td>回收确认</td>
+</tr>
+<tr>
+<td>UI-15 / P04</td>
+<td>完整备份</td>
+<td>path.pick；backup.preview；backup.commit</td>
+<td>FR-13 / T62 / AC-28</td>
+<td>停止游戏；空间与文件摘要；任务进度</td>
+<td>备份确认弹窗</td>
+</tr>
+<tr>
+<td>UI-16 / P05</td>
+<td>目标实例与内容类型</td>
+<td>instance.list；content.list</td>
+<td>FR-10 / T50 / T57 / AC-35</td>
+<td>UUID绑定；不可把Fabric样例用于其他实例</td>
+<td>目标选择/空内容</td>
+</tr>
+<tr>
+<td>UI-17 / P05</td>
+<td>搜索/详情/选择具体文件</td>
+<td>content.search；content.project</td>
+<td>FR-11 / T51 / T57 / AC-16</td>
+<td>项目候选不等于文件；离线保留缓存</td>
+<td>发现列表/依赖弹窗</td>
+</tr>
+<tr>
+<td>UI-18 / P05</td>
+<td>本地添加</td>
+<td>path.pick；content.preview_change；content.commit_change</td>
+<td>FR-10 / T50 / T53 / AC-15</td>
+<td>有限读JAR；未知保留；不执行识别</td>
+<td>未知文件预览</td>
+</tr>
+<tr>
+<td>UI-19 / P05</td>
+<td>启用/禁用/移除</td>
+<td>content.preview_change；content.commit_change</td>
+<td>FR-10 / T53 / T57 / AC-15 / AC-17</td>
+<td>依赖冲突阻断；运行中禁改；提交后开关更新</td>
+<td>变更确认后更新演示开关</td>
+</tr>
+<tr>
+<td>UI-20 / P05</td>
+<td>安装/更新/依赖选择</td>
+<td>content.preview_change；content.commit_change</td>
+<td>FR-10 / FR-11 / T52 / T53 / T57 / AC-16 / AC-17</td>
+<td>optional默认不选；选择改变使计划失效</td>
+<td>依赖预览→任务</td>
+</tr>
+<tr>
+<td>UI-21 / P06</td>
+<td>列表/筛选/步骤/进度</td>
+<td>task.list；task.get；events.read</td>
+<td>FR-08 / T21 / T26 / AC-27 / AC-32</td>
+<td>unknown total不用0%；paused与failed分开</td>
+<td>三标签/步骤详情</td>
+</tr>
+<tr>
+<td>UI-22 / P06</td>
+<td>暂停/继续/取消</td>
+<td>task.control</td>
+<td>FR-08 / T21 / T26 / AC-06 / AC-08</td>
+<td>能力来自后端；Committing只查看</td>
+<td>模拟暂停/取消</td>
+</tr>
+<tr>
+<td>UI-23 / P06</td>
+<td>重试/中断恢复</td>
+<td>task.control；plan.get</td>
+<td>FR-08 / T21 / AC-08 / AC-31</td>
+<td>retry新execution；journal先恢复；旧错误保留</td>
+<td>错误场景→重试</td>
+</tr>
+<tr>
+<td>UI-24 / P07</td>
+<td>添加/重登/取消</td>
+<td>account.begin；account.cancel；account.recheck</td>
+<td>FR-06 / T30 / T31 / AC-13 / AC-14</td>
+<td>认证门未通过禁用；PKCE仅Rust</td>
+<td>认证过程演示</td>
+</tr>
+<tr>
+<td>UI-25 / P07</td>
+<td>切换/移除账号</td>
+<td>account.select；account.remove</td>
+<td>FR-06 / T31 / AC-13 / AC-34</td>
+<td>不改活跃Run绑定；删除secret失败不伪成功</td>
+<td>移除后仅账号空态</td>
+</tr>
+<tr>
+<td>UI-26 / P08</td>
+<td>设置草稿/验证/保存</td>
+<td>settings.get；settings.validate；settings.save</td>
+<td>FR-14 / T15 / AC-38</td>
+<td>跨分类保留草稿；离页保留/放弃；失败留旧值</td>
+<td>可编辑字段会话保存</td>
+</tr>
+<tr>
+<td>UI-27 / P08</td>
+<td>Java发现/手动路径</td>
+<td>path.pick；runtime.list；runtime.probe</td>
+<td>FR-05 / T24 / AC-10</td>
+<td>只探测授权路径；自动/手动有效值</td>
+<td>检测说明/内存草稿</td>
+</tr>
+<tr>
+<td>UI-28 / P08</td>
+<td>存储检查/GC清理</td>
+<td>storage.inspect；storage.cleanup_preview；storage.commit</td>
+<td>FR-14 / T23 / T63 / AC-33 / AC-34</td>
+<td>24h隔离；活动引用不可清理</td>
+<td>清理计划预览</td>
+</tr>
+<tr>
+<td>UI-29 / P08</td>
+<td>迁移数据根</td>
+<td>path.pick；storage.migrate_preview；storage.commit</td>
+<td>FR-13 / T62 / AC-23 / AC-39</td>
+<td>全局维护lease；复制/校验/切换/旧根保留</td>
+<td>迁移方案弹窗</td>
+</tr>
+<tr>
+<td>UI-30 / P08</td>
+<td>回收站恢复/永久删除</td>
+<td>trash.list；instance.restore_preview；instance.commit；trash.purge_preview；trash.commit_purge</td>
+<td>FR-04 / FR-13 / T27 / T63 / AC-09 / AC-39</td>
+<td>先审计恢复；永久删除需输入文字</td>
+<td>回收站列表/确认</td>
+</tr>
+<tr>
+<td>UI-31 / P08</td>
+<td>从备份恢复</td>
+<td>path.pick；backup.restore_preview；backup.commit</td>
+<td>FR-13 / T62 / AC-28</td>
+<td>固定为新实例；损坏不写；不覆盖现有</td>
+<td>备份恢复弹窗</td>
+</tr>
+<tr>
+<td>UI-32 / P09</td>
+<td>选择运行/搜索/等级</td>
+<td>run.list；run.log_page</td>
+<td>FR-07 / T34 / AC-20</td>
+<td>不把旧运行摘要当当前；64KiB页</td>
+<td>运行日志样例</td>
+</tr>
+<tr>
+<td>UI-33 / P09</td>
+<td>脱敏预览/本地导出</td>
+<td>diagnostics.export_preview；diagnostics.export_commit；path.pick</td>
+<td>FR-13 / T34 / AC-20 / AC-34</td>
+<td>选择改变重预览；token永远脱敏</td>
+<td>导出预览弹窗</td>
+</tr>
+<tr>
+<td>UI-34 / GLOBAL</td>
+<td>启动进程停止</td>
+<td>run.get；run.stop</td>
+<td>FR-07 / T33 / AC-25</td>
+<td>graceful→10s提示force；只能本run</td>
+<td>运行弹窗</td>
+</tr>
+<tr>
+<td>UI-35 / GLOBAL</td>
+<td>退出应用</td>
+<td>app.exit_request；app.exit_confirm</td>
+<td>FR-08 / FR-07 / T33 / AC-08 / AC-25</td>
+<td>任务安全停点；提交中等待；游戏默认继续</td>
+<td>退出预览入口</td>
+</tr>
+<tr>
+<td>UI-36 / GLOBAL</td>
+<td>初始化/重连/事件</td>
+<td>bootstrap；sync.snapshot；events.read</td>
+<td>FR-14 / FR-08 / T14 / AC-27 / AC-32</td>
+<td>游标握手；无事件不等于失败</td>
+<td>仅文档契约</td>
+</tr>
+</tbody></table>
+<p>| UI-37 / P08 | 代理/CF密钥配置与删除 | connection.configure_secret；connection.remove_secret | FR-12 / FR-14 / T15 / T55 / AC-22 / AC-34 | 通过原生安全输入；UI只读已配置状态；秘密不进入React | 设置说明；原生输入不在HTML演示 |
+| UI-38 / P07 | 自有登录应用配置 | account.configure_client | FR-06 / T02 / T30 / AC-14 | 自有client ID；保存不代表API已获批准；未验证不开放真实登录 | 账号接入配置说明弹窗 |</p>
+<h2>3. 未画成整页的界面，仍有实现义务</h2>
+<p>首次启动引导（P00）：选择本地数据根→读写/剩余空间检查→显示结果→写入配置；登录可稍后。无根授权不能commit安装。安装缺WebView2时由原生引导说明修复入口，不能依赖尚不可显示的WebView完成引导。</p>
+<p>导入向导（D01）：选源→扫描进度→逐实例和共享目录范围选择→选择目标→差异与空间→确认→任务。未知归属不默认复制进所有实例；源变化要求重扫。</p>
+<p>克隆升级（D02）：原实例快照→名称、目标MC/Loader构建与是否含存档→Mod保留/替换/移除差异→必需冲突解决→新实例计划。确认页包含“源不变；升级后的存档不保证可降级”。</p>
+<p>回收站（D03）：设置/存储入口，显示原名称、删除时间、含存档、保留期限、大小；恢复先审计，目标ID冲突时要求新实例恢复；永久清理单独输入“永久删除”。到期只变为可清理，不自动销毁存档。</p>
+<p>恢复中心（D04）：启动检测Interrupted/journal冲突后显示任务、最后安全阶段、保留数据位置、可恢复动作；除确定可自动完成的DB已提交投影外，先显示恢复摘要。无法判定文件所有权时只读保全并显示RepairRequired。</p>
+<p>实例参数（D05）：Java（继承/自动/指定已验证runtime）、Xms/Xmx、窗口模式/尺寸、JVM高级参数白名单；字段旁显示有效值及来源。高级参数解析失败定位具体项；不能开放任意shell命令。</p>
+<p>以上可以用原型的弹窗与组件规范组合实现，不授权agent省略步骤。缺图不代表可造新的默认行为；新增业务规则先补ADR与AC。</p>
+<h2>4. 交付逐项勾验</h2>
+<p>实施报告必须引用UI-ID、规范命令名、实际DTO样本（脱敏）、状态跃迁、失败恢复截图、AC证据。每个任务的完成条件包含“涉及操作无悬空按钮，无永远返回mock成功”；完成样式不代表通过功能验收。GUI与Rust集成后，以12文档追踪所有UI-ID；至少一个成功、一个可恢复错误、一个阻断场景。</p>
+<p>P2皮肤/AI不列入当前UI闭环；界面仅可显示未开放状态，不能留下看似可用的入口。</p>
+</section></main></div><footer>本总册可离线阅读。公开来源链接需联网打开。所有产品验收均待实施阶段执行。</footer></body></html>

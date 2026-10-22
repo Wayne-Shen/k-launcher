@@ -1,0 +1,272 @@
+[
+  {
+    "id": "mojang-manifest",
+    "url": "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+    "status": 200,
+    "bytes": 278138,
+    "checked_at": "2026-10-22T00:58:09.805186+00:00",
+    "latest": {
+      "release": "26.3",
+      "snapshot": "26.4-snapshot-5"
+    },
+    "samples": [
+      {
+        "id": "1.21.1",
+        "url": "https://piston-meta.mojang.com/v1/packages/1757c8b1fbfc6b638504e1f6cceb05893f7389d5/1.21.1.json",
+        "javaVersion": {
+          "component": "java-runtime-delta",
+          "majorVersion": 21
+        },
+        "sha1_verified": true
+      },
+      {
+        "id": "26.1",
+        "url": "https://piston-meta.mojang.com/v1/packages/b85db8efa37dc2e9d5cb12ee324a42d22fd98c08/26.1.json",
+        "javaVersion": {
+          "component": "java-runtime-epsilon",
+          "majorVersion": 25
+        },
+        "sha1_verified": true
+      },
+      {
+        "id": "26.4-snapshot-5",
+        "url": "https://piston-meta.mojang.com/v1/packages/2ee2d20f6e6a37aae39238fff3286ab879a99ce6/26.4-snapshot-5.json",
+        "javaVersion": {
+          "component": "java-runtime-epsilon",
+          "majorVersion": 25
+        },
+        "sha1_verified": true
+      }
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "1e9f0052c6f385576f0effac072f2b32278346ce647d681e396dcf7b6f7d738a"
+  },
+  {
+    "id": "fabric-api",
+    "url": "https://meta.fabricmc.net/v2/versions/loader/1.21.1",
+    "status": 200,
+    "bytes": 598926,
+    "checked_at": "2026-10-22T00:58:15.236225+00:00",
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "fbc1f353e69877b137b73c7416208259f07cead571af48f1c2a6c8902eeec5c8"
+  },
+  {
+    "id": "pcl-latest",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/releases/latest",
+    "status": 200,
+    "bytes": 2122,
+    "checked_at": "2026-10-22T00:58:16.281093+00:00",
+    "tag": "2.99.0.0",
+    "published_at": "2026-10-20T07:01:34Z",
+    "stored_file": "pcl-latest.json",
+    "snapshot_kind": "selected-technical-fields",
+    "original_response_sha256": "33eef844ca49b0b4c1b59dbe3e07005dfb7e17f38669dd44e9830b7b7c45e580"
+  },
+  {
+    "id": "neoforge-maven",
+    "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml",
+    "status": 200,
+    "bytes": 68481,
+    "checked_at": "2026-10-22T00:58:18.348235+00:00",
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "899eea4d46d5dc41c5b21a993cb32f73bdfbf68d28ee055c958297453ed10140"
+  },
+  {
+    "id": "forge-promotions",
+    "url": "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json",
+    "status": 200,
+    "bytes": 4153,
+    "checked_at": "2026-10-22T00:58:19.486575+00:00",
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "c521d3f503ee7453aba86d9d6fefccf9ccab7543e14d91e83eb3d1aa9ae4d1e0"
+  },
+  {
+    "id": "quilt-api",
+    "url": "https://meta.quiltmc.org/v3/versions/loader/1.21.1",
+    "status": 200,
+    "bytes": 892353,
+    "checked_at": "2026-10-22T00:58:21.288038+00:00",
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "de882ad66ba5d401bbe3c5453be7a00ab422faee6bf5c54d7a86feefe1f6a5d4"
+  },
+  {
+    "id": "modrinth-root",
+    "url": "https://api.modrinth.com/v2/",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "id": "pcl-pages",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/contents/Plain%20Craft%20Launcher%202/Pages",
+    "status": 200,
+    "bytes": 12942,
+    "checked_at": "2026-10-22T00:58:23.279330+00:00",
+    "pages": [
+      "PageDownload",
+      "PageInstance",
+      "PageLaunch",
+      "PageLink",
+      "PageOther",
+      "PageSelectLeft.xaml",
+      "PageSelectLeft.xaml.vb",
+      "PageSelectRight.xaml",
+      "PageSelectRight.xaml.vb",
+      "PageSetup",
+      "PageSpeedLeft.xaml",
+      "PageSpeedLeft.xaml.vb",
+      "PageSpeedRight.xaml",
+      "PageSpeedRight.xaml.vb"
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "69f299fc4fa00d4da1ffd42f2d82a113377f3bd1ca259f82b11c4956f762f77a"
+  },
+  {
+    "id": "pcl-license",
+    "url": "https://raw.githubusercontent.com/Meloong-Git/PCL/main/LICENCE",
+    "status": 200,
+    "bytes": 3168,
+    "checked_at": "2026-10-22T00:58:24.274900+00:00",
+    "stored_file": "pcl-license-summary.json",
+    "snapshot_kind": "source-reference-and-summary",
+    "original_response_sha256": "82a74e444215364581d20b6d51f3d5a3ab3c493fca8f9058fa3e89f657ca80f4"
+  },
+  {
+    "id": "pcl-releases",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/releases?per_page=6",
+    "status": 200,
+    "bytes": 33456,
+    "checked_at": "2026-10-22T00:58:25.471122+00:00",
+    "stored_file": "pcl-releases.json",
+    "snapshot_kind": "selected-technical-fields",
+    "original_response_sha256": "7105df8e127088eff42f61e077e9f15a214683f5e8f8dd1464c19be1261416c3"
+  },
+  {
+    "id": "modrinth-search",
+    "url": "https://api.modrinth.com/v2/search?query=sodium&limit=1",
+    "status": 200,
+    "bytes": 1954,
+    "checked_at": "2026-10-22T01:01:52.849693+00:00",
+    "hits": 359,
+    "stored_file": "modrinth-search.json",
+    "snapshot_kind": "selected-technical-fields",
+    "original_response_sha256": "34b96528e60411b8230feb5ab783348ed27e9a8ca43fc5c009637ee435f744f6"
+  },
+  {
+    "id": "modrinth-versions",
+    "url": "https://api.modrinth.com/v2/project/sodium/version?game_versions=%5B%221.21.1%22%5D&loaders=%5B%22fabric%22%5D",
+    "status": 200,
+    "bytes": 54517,
+    "checked_at": "2026-10-22T01:01:54.123554+00:00",
+    "version_count": 22,
+    "stored_file": "modrinth-versions.json",
+    "snapshot_kind": "selected-technical-fields",
+    "original_response_sha256": "78df9922bb66d535b98ec69b8e9719de3ed8ec577c50ccadfb8829703002c622"
+  },
+  {
+    "id": "adoptium-java25",
+    "url": "https://api.adoptium.net/v3/assets/latest/25/hotspot?architecture=x64&image_type=jdk&os=windows&vendor=eclipse",
+    "status": 200,
+    "bytes": 2777,
+    "checked_at": "2026-10-22T01:01:55.099432+00:00",
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "2adadf07d76b8bc3266c22e2e653a560a821236fb4bca40821d61aa95b993f98"
+  },
+  {
+    "id": "pcl-download-pages",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/contents/Plain%20Craft%20Launcher%202/Pages/PageDownload",
+    "status": 200,
+    "bytes": 7426,
+    "checked_at": "2026-10-22T01:01:56.083821+00:00",
+    "items": [
+      "ModDownloadLib.vb",
+      "PageDownloadInstall.xaml",
+      "PageDownloadInstall.xaml.vb",
+      "PageDownloadLeft.xaml",
+      "PageDownloadLeft.xaml.vb",
+      "PageDownloadModify.vb",
+      "Resource"
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "b16ad5ab27b4d5f187c02921215ec5f4b125a7880472f3a4aba5b0f66f45abdf"
+  },
+  {
+    "id": "pcl-instance-pages",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/contents/Plain%20Craft%20Launcher%202/Pages/PageInstance",
+    "status": 200,
+    "bytes": 15429,
+    "checked_at": "2026-10-22T01:01:57.081760+00:00",
+    "items": [
+      "MyLocalModItem.xaml",
+      "MyLocalModItem.xaml.vb",
+      "PageInstanceExport.xaml",
+      "PageInstanceExport.xaml.vb",
+      "PageInstanceLeft.xaml",
+      "PageInstanceLeft.xaml.vb",
+      "PageInstanceMod.xaml",
+      "PageInstanceMod.xaml.vb",
+      "PageInstanceModDisabled.xaml",
+      "PageInstanceModDisabled.xaml.vb",
+      "PageInstanceOverall.xaml",
+      "PageInstanceOverall.xaml.vb",
+      "PageInstanceSetup.xaml",
+      "PageInstanceSetup.xaml.vb"
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "8905a29b90e9c99c557118674ceed00c0b8733224f329d74b7366bc6a9c4a3da"
+  },
+  {
+    "id": "pcl-launch-pages",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/contents/Plain%20Craft%20Launcher%202/Pages/PageLaunch",
+    "status": 200,
+    "bytes": 23333,
+    "checked_at": "2026-10-22T01:01:58.131844+00:00",
+    "items": [
+      "MyMsgLogin.xaml",
+      "MyMsgLogin.xaml.vb",
+      "MySkin.xaml",
+      "MySkin.xaml.vb",
+      "PageLaunchLeft.xaml",
+      "PageLaunchLeft.xaml.vb",
+      "PageLaunchRight.xaml",
+      "PageLaunchRight.xaml.vb",
+      "PageLoginAuth.xaml",
+      "PageLoginAuth.xaml.vb",
+      "PageLoginAuthSkin.xaml",
+      "PageLoginAuthSkin.xaml.vb",
+      "PageLoginLegacy.xaml",
+      "PageLoginLegacy.xaml.vb",
+      "PageLoginMs.xaml",
+      "PageLoginMs.xaml.vb",
+      "PageLoginMsSkin.xaml",
+      "PageLoginMsSkin.xaml.vb",
+      "PageLoginNide.xaml",
+      "PageLoginNide.xaml.vb",
+      "PageLoginNideSkin.xaml",
+      "PageLoginNideSkin.xaml.vb"
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "128934c15a5ce345d1f3f81100785dcf4b3a58e1fe69490a3a68f9ed471c68cf"
+  },
+  {
+    "id": "pcl-setup-pages",
+    "url": "https://api.github.com/repos/Meloong-Git/PCL/contents/Plain%20Craft%20Launcher%202/Pages/PageSetup",
+    "status": 200,
+    "bytes": 12587,
+    "checked_at": "2026-10-22T01:01:59.133843+00:00",
+    "items": [
+      "PageSetupLaunch.xaml",
+      "PageSetupLaunch.xaml.vb",
+      "PageSetupLeft.xaml",
+      "PageSetupLeft.xaml.vb",
+      "PageSetupLink.xaml",
+      "PageSetupLink.xaml.vb",
+      "PageSetupSystem.xaml",
+      "PageSetupSystem.xaml.vb",
+      "PageSetupUI.xaml",
+      "PageSetupUI.xaml.vb",
+      "SettingService.vb",
+      "Settings.vb"
+    ],
+    "snapshot_kind": "original-response",
+    "original_response_sha256": "0748f04bb885fbf9896a07259090434810f68bea4407b39196cd54e5a09a1ccf"
+  }
+]

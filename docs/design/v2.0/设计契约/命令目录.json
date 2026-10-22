@@ -1,0 +1,659 @@
+{
+  "design_version": "2.0",
+  "contract_version": 1,
+  "status": "design_only_not_generated_backend",
+  "envelope_reference": "文档11 §2",
+  "commands": [
+    {
+      "name": "bootstrap",
+      "request_fields": {},
+      "response_type": "BootstrapDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "sync.snapshot",
+      "request_fields": {},
+      "response_type": "SyncSnapshotDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "events.read",
+      "request_fields": {
+        "after_cursor": "DecimalString",
+        "limit?": "integer 1..200; default 100"
+      },
+      "response_type": "EventPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "catalog.list",
+      "request_fields": {
+        "channel": "release|snapshot|old",
+        "query?": "string <=256; default empty",
+        "cursor?": "opaque string",
+        "refresh?": "boolean; default false"
+      },
+      "response_type": "CatalogPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "loader.list",
+      "request_fields": {
+        "mc_id": "string",
+        "kind": "fabric|forge|neoforge|quilt"
+      },
+      "response_type": "LoaderPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "path.pick",
+      "request_fields": {
+        "purpose": "data_root|import_source|content_file|java_executable|backup_source|export_target"
+      },
+      "response_type": "PathGrantDTO",
+      "mode": "interaction",
+      "guard": "只允许系统选择器；取消返回canceled=true"
+    },
+    {
+      "name": "install.preview",
+      "request_fields": {
+        "mc_id": "string",
+        "loader_pin?": "LoaderPin",
+        "name": "InstanceName",
+        "java_policy": "JavaPolicy",
+        "acknowledgements": "Acknowledgement[]; default []",
+        "root_id?": "UUID of previously authorized DataRoot; XOR root_token",
+        "root_token?": "PathToken for newly selected root; XOR root_id"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "install.commit",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "计划kind=install；plan未过期；root可写；无blocking issue"
+    },
+    {
+      "name": "plan.get",
+      "request_fields": {
+        "plan_id": "UUID"
+      },
+      "response_type": "PlanDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "task.list",
+      "request_fields": {
+        "filter": "active|attention|done|all",
+        "cursor?": "opaque string"
+      },
+      "response_type": "TaskPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "task.get",
+      "request_fields": {
+        "task_id": "UUID"
+      },
+      "response_type": "TaskDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "task.control",
+      "request_fields": {
+        "task_id": "UUID",
+        "action": "pause|resume|cancel|retry_failed|recover",
+        "expected_revision": "DecimalString"
+      },
+      "response_type": "TaskControlDTO",
+      "mode": "mutate",
+      "guard": "合法状态；后端返回capabilities；retry_failed新增execution"
+    },
+    {
+      "name": "instance.list",
+      "request_fields": {
+        "query?": "string <=256",
+        "include_trashed?": "boolean default false",
+        "cursor?": "opaque string"
+      },
+      "response_type": "InstancePageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "instance.get",
+      "request_fields": {
+        "instance_id": "UUID"
+      },
+      "response_type": "InstanceDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "instance.update",
+      "request_fields": {
+        "instance_id": "UUID",
+        "expected_revision": "DecimalString",
+        "patch": "InstancePatch"
+      },
+      "response_type": "InstanceDTO",
+      "mode": "mutate",
+      "guard": "仅名称/启动配置白名单；运行配置写入需无运行/写lease"
+    },
+    {
+      "name": "instance.repair_preview",
+      "request_fields": {
+        "instance_id": "UUID",
+        "scope": "required_components"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "instance.clone_preview",
+      "request_fields": {
+        "instance_id": "UUID",
+        "name": "InstanceName",
+        "include_saves": "boolean",
+        "target?": "VersionSelection"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "不传target为原版本克隆；有target为克隆升级；原实例停止"
+    },
+    {
+      "name": "instance.delete_preview",
+      "request_fields": {
+        "instance_id": "UUID"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "含存档数量/大小；显示回收7天，无永久删除快捷操作"
+    },
+    {
+      "name": "instance.restore_preview",
+      "request_fields": {
+        "deletion_id": "UUID"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "instance.commit",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind限定repair|clone|upgrade|delete|restore"
+    },
+    {
+      "name": "shell.open_instance_directory",
+      "request_fields": {
+        "instance_id": "UUID",
+        "area": "game|saves|runs"
+      },
+      "response_type": "AcceptedDTO",
+      "mode": "interaction",
+      "guard": "Rust查目录；不接收URL/绝对路径/命令"
+    },
+    {
+      "name": "content.list",
+      "request_fields": {
+        "instance_id": "UUID",
+        "kind": "mod|resourcepack|shaderpack",
+        "query?": "string <=256",
+        "cursor?": "opaque string"
+      },
+      "response_type": "ContentPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "content.search",
+      "request_fields": {
+        "instance_id": "UUID",
+        "kind": "mod|resourcepack|shaderpack",
+        "query": "string <=256",
+        "cursor?": "opaque string"
+      },
+      "response_type": "ProjectPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "content.project",
+      "request_fields": {
+        "instance_id": "UUID",
+        "provider": "modrinth",
+        "project_id": "string"
+      },
+      "response_type": "ProjectDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "content.preview_change",
+      "request_fields": {
+        "instance_id": "UUID",
+        "action": "install|update|enable|disable|remove|local_add",
+        "selection": "ContentSelection[]",
+        "optional_version_ids": "string[]; default []"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "必需依赖自动纳入；禁用/删除影响依赖需blocking issue"
+    },
+    {
+      "name": "content.commit_change",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind=content；目标无运行/写lease"
+    },
+    {
+      "name": "account.list",
+      "request_fields": {},
+      "response_type": "AccountPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "account.begin",
+      "request_fields": {
+        "account_id?": "UUID; 缺省为添加",
+        "method": "pkce|device_code"
+      },
+      "response_type": "AuthSessionDTO",
+      "mode": "mutate",
+      "guard": "自有client与grant通过接入门；secret不返回"
+    },
+    {
+      "name": "account.cancel",
+      "request_fields": {
+        "session_id": "UUID"
+      },
+      "response_type": "AcceptedDTO",
+      "mode": "mutate",
+      "guard": "会话归当前用户；终态取消返回already_finished"
+    },
+    {
+      "name": "account.select",
+      "request_fields": {
+        "account_id": "UUID",
+        "expected_revision": "DecimalString"
+      },
+      "response_type": "AccountDTO",
+      "mode": "mutate",
+      "guard": "不改变已创建RunSession绑定账号"
+    },
+    {
+      "name": "account.remove",
+      "request_fields": {
+        "account_id": "UUID",
+        "expected_revision": "DecimalString",
+        "confirmed": "boolean must true"
+      },
+      "response_type": "AccountDTO",
+      "mode": "mutate",
+      "guard": "活动启动/运行引用时阻断；secret删除失败返回CleanupPending"
+    },
+    {
+      "name": "account.recheck",
+      "request_fields": {
+        "account_id": "UUID"
+      },
+      "response_type": "AccountDTO",
+      "mode": "mutate",
+      "guard": "singleflight；不无限刷新"
+    },
+    {
+      "name": "launch.preview",
+      "request_fields": {
+        "instance_id": "UUID",
+        "account_id": "UUID",
+        "overrides": "LaunchOverrides"
+      },
+      "response_type": "LaunchPreflightDTO",
+      "mode": "plan",
+      "guard": "只读检查；缺文件返回repair建议，不能自动下载"
+    },
+    {
+      "name": "launch.start",
+      "request_fields": {
+        "preflight_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "RunAcceptedDTO",
+      "mode": "mutate",
+      "guard": "预检60秒内且未变；Rust再次校验并获取运行lease"
+    },
+    {
+      "name": "launch.cancel",
+      "request_fields": {
+        "run_id": "UUID",
+        "expected_revision": "DecimalString"
+      },
+      "response_type": "AcceptedDTO",
+      "mode": "mutate",
+      "guard": "仅预检/启动过程；spawn竞态只停止本次run"
+    },
+    {
+      "name": "run.get",
+      "request_fields": {
+        "run_id": "UUID"
+      },
+      "response_type": "RunDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "run.stop",
+      "request_fields": {
+        "run_id": "UUID",
+        "mode": "graceful|force",
+        "expected_revision": "DecimalString"
+      },
+      "response_type": "AcceptedDTO",
+      "mode": "mutate",
+      "guard": "force需独立确认；Windows身份匹配才结束"
+    },
+    {
+      "name": "run.list",
+      "request_fields": {
+        "instance_id?": "UUID",
+        "cursor?": "opaque string"
+      },
+      "response_type": "RunPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "run.log_page",
+      "request_fields": {
+        "run_id": "UUID",
+        "cursor?": "opaque string",
+        "level": "all|warn_error",
+        "query?": "string <=256"
+      },
+      "response_type": "LogPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "runtime.list",
+      "request_fields": {},
+      "response_type": "RuntimePageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "runtime.probe",
+      "request_fields": {
+        "path_token?": "PathToken; 缺省重新探测已登记runtime"
+      },
+      "response_type": "RuntimePageDTO",
+      "mode": "interaction",
+      "guard": "无扫描整个硬盘；探测超时5秒"
+    },
+    {
+      "name": "settings.get",
+      "request_fields": {},
+      "response_type": "SettingsDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "settings.validate",
+      "request_fields": {
+        "patch": "SettingsPatch"
+      },
+      "response_type": "ValidationDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "settings.save",
+      "request_fields": {
+        "patch": "SettingsPatch",
+        "expected_revision": "DecimalString"
+      },
+      "response_type": "SettingsDTO",
+      "mode": "mutate",
+      "guard": "字段验证通过；导出失败为projection_warning，DB值为准"
+    },
+    {
+      "name": "storage.inspect",
+      "request_fields": {},
+      "response_type": "StorageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "storage.cleanup_preview",
+      "request_fields": {},
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "storage.migrate_preview",
+      "request_fields": {
+        "target_root_token": "PathToken"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "冻结所有写操作与运行会话后可commit"
+    },
+    {
+      "name": "storage.commit",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind=gc|root_migration；全局维护lease"
+    },
+    {
+      "name": "trash.list",
+      "request_fields": {
+        "cursor?": "opaque string"
+      },
+      "response_type": "DeletionPageDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "trash.purge_preview",
+      "request_fields": {
+        "deletion_ids": "UUID[]"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "到期也不自动清理存档；列出完整范围"
+    },
+    {
+      "name": "trash.commit_purge",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap",
+        "confirmation_text": "string must 永久删除"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind=purge；无回退引用"
+    },
+    {
+      "name": "backup.preview",
+      "request_fields": {
+        "instance_id": "UUID",
+        "kind": "config|manifest|full",
+        "target_token": "PathToken"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "full要求游戏退出"
+    },
+    {
+      "name": "backup.restore_preview",
+      "request_fields": {
+        "source_token": "PathToken",
+        "name": "InstanceName",
+        "root_id?": "UUID of previously authorized DataRoot; XOR root_token",
+        "root_token?": "PathToken for newly selected root; XOR root_id"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "v1仅恢复为新实例；不提供覆盖当前实例选项"
+    },
+    {
+      "name": "backup.commit",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind=backup|backup_restore"
+    },
+    {
+      "name": "import.scan",
+      "request_fields": {
+        "source_token": "PathToken"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "scan为只读后台任务；结果通过import.get读取"
+    },
+    {
+      "name": "import.get",
+      "request_fields": {
+        "scan_task_id": "UUID"
+      },
+      "response_type": "ImportScanDTO",
+      "mode": "read",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "import.preview",
+      "request_fields": {
+        "scan_task_id": "UUID",
+        "selections": "ImportSelection[]",
+        "root_id?": "UUID of previously authorized DataRoot; XOR root_token",
+        "root_token?": "PathToken for newly selected root; XOR root_id"
+      },
+      "response_type": "PlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "import.commit",
+      "request_fields": {
+        "plan_id": "UUID",
+        "digest": "Digest",
+        "expected_revisions": "RevisionMap"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "kind=import；源指纹复核；只复制"
+    },
+    {
+      "name": "diagnostics.export_preview",
+      "request_fields": {
+        "run_id": "UUID",
+        "options": "RedactionOptions"
+      },
+      "response_type": "ExportPreviewDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "diagnostics.export_commit",
+      "request_fields": {
+        "preview_id": "UUID",
+        "digest": "Digest",
+        "target_token": "PathToken"
+      },
+      "response_type": "TaskAcceptedDTO",
+      "mode": "mutate",
+      "guard": "mandatory secret redaction无法取消"
+    },
+    {
+      "name": "app.exit_request",
+      "request_fields": {},
+      "response_type": "ExitPlanDTO",
+      "mode": "plan",
+      "guard": "本地主窗口；contract_version=1"
+    },
+    {
+      "name": "app.exit_confirm",
+      "request_fields": {
+        "exit_plan_id": "UUID",
+        "digest": "Digest",
+        "keep_game_running": "boolean"
+      },
+      "response_type": "AcceptedDTO",
+      "mode": "mutate",
+      "guard": "stop scheduling→safe checkpoint；Committing必须等完成"
+    },
+    {
+      "name": "connection.configure_secret",
+      "request_fields": {
+        "provider": "proxy|curseforge",
+        "proxy_endpoint_id?": "UUID required if proxy"
+      },
+      "response_type": "SecretStatusDTO",
+      "mode": "mutate",
+      "guard": "Rust打开原生凭据输入；renderer不接收secret；取消返回canceled"
+    },
+    {
+      "name": "connection.remove_secret",
+      "request_fields": {
+        "provider": "proxy|curseforge",
+        "proxy_endpoint_id?": "UUID required if proxy"
+      },
+      "response_type": "SecretStatusDTO",
+      "mode": "mutate",
+      "guard": "无在途请求使用；失败显示CleanupPending，不伪称已清理"
+    },
+    {
+      "name": "account.configure_client",
+      "request_fields": {
+        "client_id": "UUID public application ID",
+        "expected_revision": "DecimalString",
+        "confirmed_owned_application": "boolean must true"
+      },
+      "response_type": "AuthConfigurationDTO",
+      "mode": "mutate",
+      "guard": "仅保存用户自有public-client ID；scopes/redirect由M0固定适配器约束，不接受任意认证域名"
+    }
+  ]
+}

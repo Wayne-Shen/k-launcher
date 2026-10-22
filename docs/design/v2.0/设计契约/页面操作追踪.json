@@ -1,0 +1,869 @@
+{
+  "design_version": "2.0",
+  "operations": [
+    {
+      "id": "UI-01",
+      "page": "P01",
+      "label": "启动当前实例",
+      "requirements": [
+        "FR-07"
+      ],
+      "commands": [
+        "launch.preview",
+        "launch.start",
+        "launch.cancel"
+      ],
+      "tasks": [
+        "T35"
+      ],
+      "acceptance": [
+        "AC-11",
+        "AC-25"
+      ],
+      "behavior": "预检→运行；登录失效/修复阻断",
+      "prototype_coverage": "预检弹窗→模拟运行",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-02",
+      "page": "P01",
+      "label": "当前实例与账号",
+      "requirements": [
+        "FR-04",
+        "FR-06"
+      ],
+      "commands": [
+        "instance.list",
+        "account.list",
+        "account.select"
+      ],
+      "tasks": [
+        "T35"
+      ],
+      "acceptance": [
+        "AC-35"
+      ],
+      "behavior": "切换只影响后续运行；顶部保留目标",
+      "prototype_coverage": "实例/账号摘要",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-03",
+      "page": "P01",
+      "label": "打开安装/下载",
+      "requirements": [
+        "FR-02",
+        "FR-08"
+      ],
+      "commands": [
+        "catalog.list",
+        "task.list"
+      ],
+      "tasks": [
+        "T26"
+      ],
+      "acceptance": [
+        "AC-02"
+      ],
+      "behavior": "导航保留进行中任务",
+      "prototype_coverage": "导航与摘要联动",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-04",
+      "page": "P02",
+      "label": "列表/搜索/选择实例",
+      "requirements": [
+        "FR-04"
+      ],
+      "commands": [
+        "instance.list",
+        "instance.get"
+      ],
+      "tasks": [
+        "T26"
+      ],
+      "acceptance": [
+        "AC-35"
+      ],
+      "behavior": "稳定UUID路由；空态/无结果分开",
+      "prototype_coverage": "列表与选择",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-05",
+      "page": "P02",
+      "label": "导入目录/整合包",
+      "requirements": [
+        "FR-12",
+        "FR-13"
+      ],
+      "commands": [
+        "path.pick",
+        "import.scan",
+        "import.get",
+        "import.preview",
+        "import.commit"
+      ],
+      "tasks": [
+        "T54",
+        "T60"
+      ],
+      "acceptance": [
+        "AC-18",
+        "AC-23"
+      ],
+      "behavior": "扫描→选择→差异→固定计划→任务",
+      "prototype_coverage": "扫描后摘要弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-06",
+      "page": "P03",
+      "label": "版本目录/刷新/搜索",
+      "requirements": [
+        "FR-02"
+      ],
+      "commands": [
+        "catalog.list"
+      ],
+      "tasks": [
+        "T20",
+        "T26"
+      ],
+      "acceptance": [
+        "AC-02"
+      ],
+      "behavior": "加载/失败/过期缓存/空；实验主动开启",
+      "prototype_coverage": "目录样例切换",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-07",
+      "page": "P03",
+      "label": "Loader候选与构建",
+      "requirements": [
+        "FR-09"
+      ],
+      "commands": [
+        "loader.list"
+      ],
+      "tasks": [
+        "T45"
+      ],
+      "acceptance": [
+        "AC-12"
+      ],
+      "behavior": "固定构建；Unknown和Unsupported阻断",
+      "prototype_coverage": "构建字段/兼容说明",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-08",
+      "page": "P03",
+      "label": "名称/目标/Java/空间",
+      "requirements": [
+        "FR-01",
+        "FR-05"
+      ],
+      "commands": [
+        "path.pick",
+        "runtime.list",
+        "install.preview"
+      ],
+      "tasks": [
+        "T24",
+        "T26"
+      ],
+      "acceptance": [
+        "AC-01",
+        "AC-10",
+        "AC-36"
+      ],
+      "behavior": "逐字段验证；未知空间需预算重预览",
+      "prototype_coverage": "字段与摘要",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-09",
+      "page": "P03",
+      "label": "预览并确认安装",
+      "requirements": [
+        "FR-03",
+        "FR-08"
+      ],
+      "commands": [
+        "install.preview",
+        "install.commit",
+        "plan.get"
+      ],
+      "tasks": [
+        "T25",
+        "T26"
+      ],
+      "acceptance": [
+        "AC-06",
+        "AC-37"
+      ],
+      "behavior": "新预览摘要；单幂等key；过期重预览",
+      "prototype_coverage": "确认→模拟队列",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-10",
+      "page": "P04",
+      "label": "重命名/实例参数",
+      "requirements": [
+        "FR-04",
+        "FR-14"
+      ],
+      "commands": [
+        "instance.get",
+        "instance.update"
+      ],
+      "tasks": [
+        "T27",
+        "T35"
+      ],
+      "acceptance": [
+        "AC-09",
+        "AC-38"
+      ],
+      "behavior": "revision冲突保留草稿；继承值显式",
+      "prototype_coverage": "重命名/参数预览",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-11",
+      "page": "P04",
+      "label": "打开管理目录",
+      "requirements": [
+        "FR-04"
+      ],
+      "commands": [
+        "shell.open_instance_directory"
+      ],
+      "tasks": [
+        "T27"
+      ],
+      "acceptance": [
+        "AC-22"
+      ],
+      "behavior": "允许的子目录枚举；缺失报错",
+      "prototype_coverage": "路径说明弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-12",
+      "page": "P04",
+      "label": "校验修复",
+      "requirements": [
+        "FR-03"
+      ],
+      "commands": [
+        "instance.repair_preview",
+        "instance.commit"
+      ],
+      "tasks": [
+        "T27"
+      ],
+      "acceptance": [
+        "AC-09"
+      ],
+      "behavior": "先扫描摘要；不动用户内容",
+      "prototype_coverage": "修复计划弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-13",
+      "page": "P04",
+      "label": "克隆/克隆升级",
+      "requirements": [
+        "FR-15"
+      ],
+      "commands": [
+        "instance.clone_preview",
+        "instance.commit"
+      ],
+      "tasks": [
+        "T61"
+      ],
+      "acceptance": [
+        "AC-39"
+      ],
+      "behavior": "选择是否含存档；无兼容解不可提交",
+      "prototype_coverage": "目标与差异预览",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-14",
+      "page": "P04",
+      "label": "删除至回收站",
+      "requirements": [
+        "FR-04"
+      ],
+      "commands": [
+        "instance.delete_preview",
+        "instance.commit"
+      ],
+      "tasks": [
+        "T27"
+      ],
+      "acceptance": [
+        "AC-09",
+        "AC-33"
+      ],
+      "behavior": "含存档范围；占用阻断；状态Trashed",
+      "prototype_coverage": "回收确认",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-15",
+      "page": "P04",
+      "label": "完整备份",
+      "requirements": [
+        "FR-13"
+      ],
+      "commands": [
+        "path.pick",
+        "backup.preview",
+        "backup.commit"
+      ],
+      "tasks": [
+        "T62"
+      ],
+      "acceptance": [
+        "AC-28"
+      ],
+      "behavior": "停止游戏；空间与文件摘要；任务进度",
+      "prototype_coverage": "备份确认弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-16",
+      "page": "P05",
+      "label": "目标实例与内容类型",
+      "requirements": [
+        "FR-10"
+      ],
+      "commands": [
+        "instance.list",
+        "content.list"
+      ],
+      "tasks": [
+        "T50",
+        "T57"
+      ],
+      "acceptance": [
+        "AC-35"
+      ],
+      "behavior": "UUID绑定；不可把Fabric样例用于其他实例",
+      "prototype_coverage": "目标选择/空内容",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-17",
+      "page": "P05",
+      "label": "搜索/详情/选择具体文件",
+      "requirements": [
+        "FR-11"
+      ],
+      "commands": [
+        "content.search",
+        "content.project"
+      ],
+      "tasks": [
+        "T51",
+        "T57"
+      ],
+      "acceptance": [
+        "AC-16"
+      ],
+      "behavior": "项目候选不等于文件；离线保留缓存",
+      "prototype_coverage": "发现列表/依赖弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-18",
+      "page": "P05",
+      "label": "本地添加",
+      "requirements": [
+        "FR-10"
+      ],
+      "commands": [
+        "path.pick",
+        "content.preview_change",
+        "content.commit_change"
+      ],
+      "tasks": [
+        "T50",
+        "T53"
+      ],
+      "acceptance": [
+        "AC-15"
+      ],
+      "behavior": "有限读JAR；未知保留；不执行识别",
+      "prototype_coverage": "未知文件预览",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-19",
+      "page": "P05",
+      "label": "启用/禁用/移除",
+      "requirements": [
+        "FR-10"
+      ],
+      "commands": [
+        "content.preview_change",
+        "content.commit_change"
+      ],
+      "tasks": [
+        "T53",
+        "T57"
+      ],
+      "acceptance": [
+        "AC-15",
+        "AC-17"
+      ],
+      "behavior": "依赖冲突阻断；运行中禁改；提交后开关更新",
+      "prototype_coverage": "变更确认后更新演示开关",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-20",
+      "page": "P05",
+      "label": "安装/更新/依赖选择",
+      "requirements": [
+        "FR-10",
+        "FR-11"
+      ],
+      "commands": [
+        "content.preview_change",
+        "content.commit_change"
+      ],
+      "tasks": [
+        "T52",
+        "T53",
+        "T57"
+      ],
+      "acceptance": [
+        "AC-16",
+        "AC-17"
+      ],
+      "behavior": "optional默认不选；选择改变使计划失效",
+      "prototype_coverage": "依赖预览→任务",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-21",
+      "page": "P06",
+      "label": "列表/筛选/步骤/进度",
+      "requirements": [
+        "FR-08"
+      ],
+      "commands": [
+        "task.list",
+        "task.get",
+        "events.read"
+      ],
+      "tasks": [
+        "T21",
+        "T26"
+      ],
+      "acceptance": [
+        "AC-27",
+        "AC-32"
+      ],
+      "behavior": "unknown total不用0%；paused与failed分开",
+      "prototype_coverage": "三标签/步骤详情",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-22",
+      "page": "P06",
+      "label": "暂停/继续/取消",
+      "requirements": [
+        "FR-08"
+      ],
+      "commands": [
+        "task.control"
+      ],
+      "tasks": [
+        "T21",
+        "T26"
+      ],
+      "acceptance": [
+        "AC-06",
+        "AC-08"
+      ],
+      "behavior": "能力来自后端；Committing只查看",
+      "prototype_coverage": "模拟暂停/取消",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-23",
+      "page": "P06",
+      "label": "重试/中断恢复",
+      "requirements": [
+        "FR-08"
+      ],
+      "commands": [
+        "task.control",
+        "plan.get"
+      ],
+      "tasks": [
+        "T21"
+      ],
+      "acceptance": [
+        "AC-08",
+        "AC-31"
+      ],
+      "behavior": "retry新execution；journal先恢复；旧错误保留",
+      "prototype_coverage": "错误场景→重试",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-24",
+      "page": "P07",
+      "label": "添加/重登/取消",
+      "requirements": [
+        "FR-06"
+      ],
+      "commands": [
+        "account.begin",
+        "account.cancel",
+        "account.recheck"
+      ],
+      "tasks": [
+        "T30",
+        "T31"
+      ],
+      "acceptance": [
+        "AC-13",
+        "AC-14"
+      ],
+      "behavior": "认证门未通过禁用；PKCE仅Rust",
+      "prototype_coverage": "认证过程演示",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-25",
+      "page": "P07",
+      "label": "切换/移除账号",
+      "requirements": [
+        "FR-06"
+      ],
+      "commands": [
+        "account.select",
+        "account.remove"
+      ],
+      "tasks": [
+        "T31"
+      ],
+      "acceptance": [
+        "AC-13",
+        "AC-34"
+      ],
+      "behavior": "不改活跃Run绑定；删除secret失败不伪成功",
+      "prototype_coverage": "移除后仅账号空态",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-26",
+      "page": "P08",
+      "label": "设置草稿/验证/保存",
+      "requirements": [
+        "FR-14"
+      ],
+      "commands": [
+        "settings.get",
+        "settings.validate",
+        "settings.save"
+      ],
+      "tasks": [
+        "T15"
+      ],
+      "acceptance": [
+        "AC-38"
+      ],
+      "behavior": "跨分类保留草稿；离页保留/放弃；失败留旧值",
+      "prototype_coverage": "可编辑字段会话保存",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-27",
+      "page": "P08",
+      "label": "Java发现/手动路径",
+      "requirements": [
+        "FR-05"
+      ],
+      "commands": [
+        "path.pick",
+        "runtime.list",
+        "runtime.probe"
+      ],
+      "tasks": [
+        "T24"
+      ],
+      "acceptance": [
+        "AC-10"
+      ],
+      "behavior": "只探测授权路径；自动/手动有效值",
+      "prototype_coverage": "检测说明/内存草稿",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-28",
+      "page": "P08",
+      "label": "存储检查/GC清理",
+      "requirements": [
+        "FR-14"
+      ],
+      "commands": [
+        "storage.inspect",
+        "storage.cleanup_preview",
+        "storage.commit"
+      ],
+      "tasks": [
+        "T23",
+        "T63"
+      ],
+      "acceptance": [
+        "AC-33",
+        "AC-34"
+      ],
+      "behavior": "24h隔离；活动引用不可清理",
+      "prototype_coverage": "清理计划预览",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-29",
+      "page": "P08",
+      "label": "迁移数据根",
+      "requirements": [
+        "FR-13"
+      ],
+      "commands": [
+        "path.pick",
+        "storage.migrate_preview",
+        "storage.commit"
+      ],
+      "tasks": [
+        "T62"
+      ],
+      "acceptance": [
+        "AC-23",
+        "AC-39"
+      ],
+      "behavior": "全局维护lease；复制/校验/切换/旧根保留",
+      "prototype_coverage": "迁移方案弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-30",
+      "page": "P08",
+      "label": "回收站恢复/永久删除",
+      "requirements": [
+        "FR-04",
+        "FR-13"
+      ],
+      "commands": [
+        "trash.list",
+        "instance.restore_preview",
+        "instance.commit",
+        "trash.purge_preview",
+        "trash.commit_purge"
+      ],
+      "tasks": [
+        "T27",
+        "T63"
+      ],
+      "acceptance": [
+        "AC-09",
+        "AC-39"
+      ],
+      "behavior": "先审计恢复；永久删除需输入文字",
+      "prototype_coverage": "回收站列表/确认",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-31",
+      "page": "P08",
+      "label": "从备份恢复",
+      "requirements": [
+        "FR-13"
+      ],
+      "commands": [
+        "path.pick",
+        "backup.restore_preview",
+        "backup.commit"
+      ],
+      "tasks": [
+        "T62"
+      ],
+      "acceptance": [
+        "AC-28"
+      ],
+      "behavior": "固定为新实例；损坏不写；不覆盖现有",
+      "prototype_coverage": "备份恢复弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-32",
+      "page": "P09",
+      "label": "选择运行/搜索/等级",
+      "requirements": [
+        "FR-07"
+      ],
+      "commands": [
+        "run.list",
+        "run.log_page"
+      ],
+      "tasks": [
+        "T34"
+      ],
+      "acceptance": [
+        "AC-20"
+      ],
+      "behavior": "不把旧运行摘要当当前；64KiB页",
+      "prototype_coverage": "运行日志样例",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-33",
+      "page": "P09",
+      "label": "脱敏预览/本地导出",
+      "requirements": [
+        "FR-13"
+      ],
+      "commands": [
+        "diagnostics.export_preview",
+        "diagnostics.export_commit",
+        "path.pick"
+      ],
+      "tasks": [
+        "T34"
+      ],
+      "acceptance": [
+        "AC-20",
+        "AC-34"
+      ],
+      "behavior": "选择改变重预览；token永远脱敏",
+      "prototype_coverage": "导出预览弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-34",
+      "page": "GLOBAL",
+      "label": "启动进程停止",
+      "requirements": [
+        "FR-07"
+      ],
+      "commands": [
+        "run.get",
+        "run.stop"
+      ],
+      "tasks": [
+        "T33"
+      ],
+      "acceptance": [
+        "AC-25"
+      ],
+      "behavior": "graceful→10s提示force；只能本run",
+      "prototype_coverage": "运行弹窗",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-35",
+      "page": "GLOBAL",
+      "label": "退出应用",
+      "requirements": [
+        "FR-08",
+        "FR-07"
+      ],
+      "commands": [
+        "app.exit_request",
+        "app.exit_confirm"
+      ],
+      "tasks": [
+        "T33"
+      ],
+      "acceptance": [
+        "AC-08",
+        "AC-25"
+      ],
+      "behavior": "任务安全停点；提交中等待；游戏默认继续",
+      "prototype_coverage": "退出预览入口",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-36",
+      "page": "GLOBAL",
+      "label": "初始化/重连/事件",
+      "requirements": [
+        "FR-14",
+        "FR-08"
+      ],
+      "commands": [
+        "bootstrap",
+        "sync.snapshot",
+        "events.read"
+      ],
+      "tasks": [
+        "T14"
+      ],
+      "acceptance": [
+        "AC-27",
+        "AC-32"
+      ],
+      "behavior": "游标握手；无事件不等于失败",
+      "prototype_coverage": "仅文档契约",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-37",
+      "page": "P08",
+      "label": "代理/CF密钥配置与删除",
+      "requirements": [
+        "FR-12",
+        "FR-14"
+      ],
+      "commands": [
+        "connection.configure_secret",
+        "connection.remove_secret"
+      ],
+      "tasks": [
+        "T15",
+        "T55"
+      ],
+      "acceptance": [
+        "AC-22",
+        "AC-34"
+      ],
+      "behavior": "通过原生安全输入；UI只读已配置状态；秘密不进入React",
+      "prototype_coverage": "设置说明；原生输入不在HTML演示",
+      "product_status": "not_implemented"
+    },
+    {
+      "id": "UI-38",
+      "page": "P07",
+      "label": "自有登录应用配置",
+      "requirements": [
+        "FR-06"
+      ],
+      "commands": [
+        "account.configure_client"
+      ],
+      "tasks": [
+        "T02",
+        "T30"
+      ],
+      "acceptance": [
+        "AC-14"
+      ],
+      "behavior": "自有client ID；保存不代表API已获批准；未验证不开放真实登录",
+      "prototype_coverage": "账号接入配置说明弹窗",
+      "product_status": "not_implemented"
+    }
+  ]
+}
